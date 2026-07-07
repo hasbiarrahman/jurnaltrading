@@ -162,4 +162,77 @@ class SettingController extends Controller
             return redirect()->route('setting.index')->with('error', 'Gagal melakukan import database: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Get pending database queries (local only).
+     */
+    public function getPendingQueries()
+    {
+        $logPath = storage_path('app/pending_queries.json');
+        $queries = [];
+        if (file_exists($logPath)) {
+            $queries = json_decode(file_get_contents($logPath), true) ?? [];
+        }
+
+        return response()->json($queries)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+    }
+
+    /**
+     * Clear pending database queries (local only).
+     */
+    public function clearPendingQueries()
+    {
+        $logPath = storage_path('app/pending_queries.json');
+        if (file_exists($logPath)) {
+            file_put_contents($logPath, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
+        }
+
+        return response()->json(['success' => true])
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+    }
+
+    /**
+     * Apply queries received from the browser (production only).
+     */
+    public function applyPendingQueries(Request $request)
+    {
+        $request->validate([
+            'queries' => 'required|array',
+            'queries.*.sql' => 'required|string',
+        ]);
+
+        $queries = $request->input('queries');
+
+        try {
+            DB::transaction(function () use ($queries) {
+                // Disable foreign keys temporarily
+                DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+                foreach ($queries as $q) {
+                    $sql = $q['sql'];
+                    // Execute raw statement
+                    DB::statement($sql);
+                }
+
+                // Enable foreign keys back
+                DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            });
+
+            return response()->json([
+                'success' => true, 
+                'message' => count($queries) . ' perubahan database berhasil disinkronkan.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Apply database queries failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal menerapkan query: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

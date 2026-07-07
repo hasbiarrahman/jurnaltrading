@@ -49,6 +49,23 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/setting/database/export', [SettingController::class, 'exportDatabase'])->name('setting.database.export');
         Route::post('/setting/database/import', [SettingController::class, 'importDatabase'])->name('setting.database.import');
 
+        // Database Sync Routes (Browser-Bridge)
+        Route::get('/api/database/pending-queries', [SettingController::class, 'getPendingQueries'])->name('api.database.pending-queries');
+        Route::post('/api/database/clear-pending-queries', [SettingController::class, 'clearPendingQueries'])->name('api.database.clear-pending-queries');
+        Route::post('/api/database/apply-queries', [SettingController::class, 'applyPendingQueries'])->name('api.database.apply-queries');
+        Route::options('/api/database/pending-queries', function() {
+            return response('', 200)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+        });
+        Route::options('/api/database/clear-pending-queries', function() {
+            return response('', 200)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+        });
+
         // Async JSON API routes
         Route::get('/api/watchlist-metrics/{symbol}', [WatchlistController::class, 'getMetrics'])->name('api.watchlist-metrics');
         Route::get('/api/trade-live-stats/{symbol}', [TradeController::class, 'getLiveStats'])->name('api.trade-live-stats');
