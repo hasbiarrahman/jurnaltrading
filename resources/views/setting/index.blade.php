@@ -74,4 +74,48 @@
         </div>
     </div>
 </div>
+
+<div class="glass-card" style="margin-top: 1.5rem;">
+    <div class="card-title" style="color: var(--color-primary);">Backup & Sinkronisasi Database</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+        Gunakan fitur ini untuk memindahkan semua data dashboard (kredensial API, pengaturan, jurnal transaksi, watchlist, dan daftar user) antar server (misal dari Staging/Lokal ke Produksi).
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <!-- Left: Export Card -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main);">Ekspor Database</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.4;">
+                    Unduh seluruh data dashboard Anda sebagai file JSON cadangan. File ini dapat di-import kembali ke sistem ini atau sistem lain sebagai pemulihan penuh.
+                </p>
+            </div>
+            <a href="{{ route('setting.database.export') }}" class="btn btn-primary" style="display: inline-block; padding: 0.8rem 1.5rem; font-size: 0.9rem; text-decoration: none; border-radius: 6px; text-align: center; width: fit-content;">
+                Unduh Backup Database (.json)
+            </a>
+        </div>
+
+        <!-- Right: Import Card -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 12px;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #ef4444;">Impor Database</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4;">
+                Unggah file backup JSON untuk menggantikan data saat ini.
+            </p>
+            
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.75rem; color: #f87171; margin-bottom: 1rem;">
+                <strong>PERINGATAN:</strong> Proses ini akan menghapus dan menggantikan semua data perdagangan (*trades*), daftar pantauan (*watchlists*), dan pengaturan (*settings*) saat ini. Sesi login akun Anda akan digabungkan secara aman.
+            </div>
+
+            <form action="{{ route('setting.database.import') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirm('Apakah Anda yakin ingin melakukan impor database? Tindakan ini akan menimpa seluruh data transaksi, watchlist, dan konfigurasi API saat ini.')">
+                @csrf
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <input type="file" name="backup_file" id="backup_file" accept=".json" required class="form-control" style="padding: 0.5rem; font-size: 0.85rem; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);">
+                </div>
+                <button type="submit" class="btn" style="padding: 0.8rem 1.5rem; font-size: 0.9rem; border-radius: 6px; border: 1px solid #ef4444; color: #ef4444; background: transparent; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='transparent'; this.style.color='#ef4444';">
+                    Unggah & Terapkan Backup
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection

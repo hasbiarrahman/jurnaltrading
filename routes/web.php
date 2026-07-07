@@ -46,6 +46,8 @@ Route::middleware(['auth'])->group(function () {
         // Settings Routes
         Route::get('/setting', [SettingController::class, 'index'])->name('setting.index');
         Route::post('/setting', [SettingController::class, 'update'])->name('setting.update');
+        Route::get('/setting/database/export', [SettingController::class, 'exportDatabase'])->name('setting.database.export');
+        Route::post('/setting/database/import', [SettingController::class, 'importDatabase'])->name('setting.database.import');
 
         // Async JSON API routes
         Route::get('/api/watchlist-metrics/{symbol}', [WatchlistController::class, 'getMetrics'])->name('api.watchlist-metrics');
