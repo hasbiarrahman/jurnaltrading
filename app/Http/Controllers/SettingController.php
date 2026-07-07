@@ -168,6 +168,13 @@ class SettingController extends Controller
      */
     public function getPendingQueries()
     {
+        if (config('app.env') !== 'local') {
+            return response()->json(['error' => 'Forbidden on production.'], 403)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+        }
+
         $logPath = storage_path('app/pending_queries.json');
         $queries = [];
         if (file_exists($logPath)) {
@@ -185,6 +192,13 @@ class SettingController extends Controller
      */
     public function clearPendingQueries()
     {
+        if (config('app.env') !== 'local') {
+            return response()->json(['error' => 'Forbidden on production.'], 403)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+        }
+
         $logPath = storage_path('app/pending_queries.json');
         if (file_exists($logPath)) {
             file_put_contents($logPath, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);

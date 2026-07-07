@@ -14,6 +14,22 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Database Sync Routes (Local-only, CORS enabled)
+Route::get('/api/database/pending-queries', [SettingController::class, 'getPendingQueries'])->name('api.database.pending-queries');
+Route::post('/api/database/clear-pending-queries', [SettingController::class, 'clearPendingQueries'])->name('api.database.clear-pending-queries');
+Route::options('/api/database/pending-queries', function() {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+});
+Route::options('/api/database/clear-pending-queries', function() {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+});
+
 // Authenticated Routes
 Route::middleware(['auth'])->group(function () {
     // Redirect root to dashboard
@@ -50,21 +66,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/setting/database/import', [SettingController::class, 'importDatabase'])->name('setting.database.import');
 
         // Database Sync Routes (Browser-Bridge)
-        Route::get('/api/database/pending-queries', [SettingController::class, 'getPendingQueries'])->name('api.database.pending-queries');
-        Route::post('/api/database/clear-pending-queries', [SettingController::class, 'clearPendingQueries'])->name('api.database.clear-pending-queries');
         Route::post('/api/database/apply-queries', [SettingController::class, 'applyPendingQueries'])->name('api.database.apply-queries');
-        Route::options('/api/database/pending-queries', function() {
-            return response('', 200)
-                ->header('Access-Control-Allow-Origin', '*')
-                ->header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
-        });
-        Route::options('/api/database/clear-pending-queries', function() {
-            return response('', 200)
-                ->header('Access-Control-Allow-Origin', '*')
-                ->header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
-        });
 
         // Async JSON API routes
         Route::get('/api/watchlist-metrics/{symbol}', [WatchlistController::class, 'getMetrics'])->name('api.watchlist-metrics');
