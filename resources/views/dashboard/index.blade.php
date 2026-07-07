@@ -53,7 +53,7 @@
     <div class="glass-card">
         <div class="card-title">Alokasi Aset Portofolio</div>
         @if(count($chartValues) > 0)
-            <div style="height: 300px; display: flex; justify-content: center; align-items: center;">
+            <div style="height: 300px; width: 100%; display: flex; justify-content: center; align-items: center;">
                 <canvas id="allocationChart" style="max-height: 100%; max-width: 100%;"></canvas>
             </div>
         @else
@@ -199,7 +199,7 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'right',
+                            position: window.innerWidth < 768 ? 'bottom' : 'right',
                             labels: {
                                 color: '#9ca3af',
                                 font: {
