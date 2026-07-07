@@ -11,6 +11,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button type="button" id="mobileSidebarToggle" class="mobile-toggle-btn">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+        <div class="sidebar-logo" style="font-size: 1.25rem;">Pelagic<span>Dashboard</span></div>
+        <div style="width: 24px;"></div> <!-- Spacer -->
+    </header>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
@@ -87,5 +101,33 @@
         </main>
     </div>
     @yield('scripts')
+
+    <!-- Mobile Navigation Toggle Script -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const toggleBtn = document.getElementById("mobileSidebarToggle");
+        const sidebar = document.querySelector(".sidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        if (toggleBtn && sidebar && overlay) {
+            function toggleSidebar() {
+                sidebar.classList.toggle("sidebar-open");
+                overlay.classList.toggle("active");
+            }
+
+            toggleBtn.addEventListener("click", toggleSidebar);
+            overlay.addEventListener("click", toggleSidebar);
+
+            // Close sidebar when clicking any menu link on mobile
+            const menuLinks = sidebar.querySelectorAll(".menu-item a");
+            menuLinks.forEach(link => {
+                link.addEventListener("click", function() {
+                    sidebar.classList.remove("sidebar-open");
+                    overlay.classList.remove("active");
+                });
+            });
+        }
+    });
+    </script>
 </body>
 </html>
