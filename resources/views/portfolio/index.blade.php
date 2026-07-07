@@ -16,7 +16,7 @@
 </div>
 
 <!-- Portfolio Performance Boxes -->
-<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+<div class="stats-grid">
     <!-- Card 1: Valuation -->
     <div class="glass-card">
         <div class="card-title">
