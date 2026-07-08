@@ -115,17 +115,14 @@
 
         if (toggleBtn && sidebar && overlay) {
             function toggleSidebar(e) {
-                if (e && e.cancelable) e.preventDefault();
+                if (e) e.preventDefault();
                 sidebar.classList.toggle("sidebar-open");
                 overlay.classList.toggle("active");
             }
 
-            // Bind to both click and touchstart for instant response on mobile
+            // Bind to click (instant on modern mobile browsers with responsive viewports)
             toggleBtn.addEventListener("click", toggleSidebar);
-            toggleBtn.addEventListener("touchstart", toggleSidebar, { passive: true });
-            
             overlay.addEventListener("click", toggleSidebar);
-            overlay.addEventListener("touchstart", toggleSidebar, { passive: true });
 
             // Close sidebar when clicking any menu link on mobile
             const menuLinks = sidebar.querySelectorAll(".sidebar-menu a");
