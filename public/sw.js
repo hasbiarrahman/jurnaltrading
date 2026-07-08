@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pelagic-cache-v1.2';
+const CACHE_NAME = 'pelagic-cache-v1.3';
 const ASSETS = [
   '/login',
   '/css/dashboard.css',
@@ -37,9 +37,15 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Exclude Laravel internal POST routes, CSRF checks, and external API calls from caching
-  if (event.request.method !== 'GET' || url.pathname.includes('/api/watchlist-metrics') || url.pathname.includes('/api/trade-live-stats')) {
-    event.respondWith(fetch(event.request));
+  // Exclude non-GET requests, APIs, and auth endpoints from Service Worker interception.
+  // By NOT calling event.respondWith(), the browser handles these natively.
+  // This is critical for POST requests (like logins) to allow redirects to function without ERR_FAILED.
+  if (
+    event.request.method !== 'GET' || 
+    url.pathname.includes('/api/') || 
+    url.pathname.includes('/login') ||
+    url.pathname.includes('/logout')
+  ) {
     return;
   }
 
