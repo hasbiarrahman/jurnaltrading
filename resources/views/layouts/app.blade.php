@@ -106,24 +106,29 @@
     </div>
     @yield('scripts')
 
-    <!-- Mobile Navigation Toggle Script -->
+    <!-- Mobile Navigation Toggle Script (Safe from DOMContentLoaded race conditions) -->
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    function initMobileSidebar() {
         const toggleBtn = document.getElementById("mobileSidebarToggle");
         const sidebar = document.querySelector(".sidebar");
         const overlay = document.getElementById("sidebarOverlay");
 
         if (toggleBtn && sidebar && overlay) {
-            function toggleSidebar() {
+            function toggleSidebar(e) {
+                if (e && e.cancelable) e.preventDefault();
                 sidebar.classList.toggle("sidebar-open");
                 overlay.classList.toggle("active");
             }
 
+            // Bind to both click and touchstart for instant response on mobile
             toggleBtn.addEventListener("click", toggleSidebar);
+            toggleBtn.addEventListener("touchstart", toggleSidebar, { passive: true });
+            
             overlay.addEventListener("click", toggleSidebar);
+            overlay.addEventListener("touchstart", toggleSidebar, { passive: true });
 
             // Close sidebar when clicking any menu link on mobile
-            const menuLinks = sidebar.querySelectorAll(".menu-item a");
+            const menuLinks = sidebar.querySelectorAll(".sidebar-menu a");
             menuLinks.forEach(link => {
                 link.addEventListener("click", function() {
                     sidebar.classList.remove("sidebar-open");
@@ -131,6 +136,13 @@
                 });
             });
         }
+    }
+
+    if (document.readyState !== 'loading') {
+        initMobileSidebar();
+    } else {
+        document.addEventListener('DOMContentLoaded', initMobileSidebar);
+    }
     </script>
 
     <!-- PWA Service Worker Registration -->
