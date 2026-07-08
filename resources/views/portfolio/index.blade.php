@@ -63,7 +63,7 @@
 <div class="glass-card mb-6">
     <div class="card-title">Rincian Kepemilikan Aset</div>
     <div class="table-responsive">
-        <table class="custom-table">
+        <table class="custom-table table-wide">
             <thead>
                 <tr>
                     <th>Aset</th>

@@ -112,7 +112,7 @@
 <div class="glass-card mb-6">
     <div class="card-title">Riwayat Perdagangan Terakhir</div>
     <div class="table-responsive">
-        <table class="custom-table">
+        <table class="custom-table table-wide">
             <thead>
                 <tr>
                     <th>Waktu</th>

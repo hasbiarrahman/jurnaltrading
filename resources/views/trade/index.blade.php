@@ -106,7 +106,7 @@
     <div style="display: flex; flex-direction: column; gap: 1.5rem;">
         <!-- Filters panel -->
         <div class="glass-card" style="padding: 1.25rem;">
-            <form action="{{ route('trade.index') }}" method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; align-items: flex-end;">
+            <form action="{{ route('trade.index') }}" method="GET" class="filter-grid">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="filter_symbol" class="form-label" style="margin-bottom: 0.25rem;">Cari Simbol</label>
                     <input type="text" name="symbol" id="filter_symbol" class="form-control" placeholder="Cari BTC, ETH, dll..." style="padding: 0.6rem; text-transform: uppercase;" value="{{ request('symbol') }}">
@@ -147,7 +147,7 @@
         <!-- Table Card -->
         <div class="glass-card">
             <div class="table-responsive">
-                <table class="custom-table">
+                <table class="custom-table table-wide">
                     <thead>
                         <tr>
                             <th>Waktu</th>

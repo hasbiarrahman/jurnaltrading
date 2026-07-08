@@ -812,8 +812,8 @@ body {
         max-height: 280px;
     }
 
-    /* Force tables to remain wide for clean horizontal swipe gesture scrolling */
-    .custom-table {
+    /* Force wide tables to remain wide for clean horizontal swipe gesture scrolling */
+    .table-wide {
         min-width: 850px !important;
     }
 }
@@ -842,5 +842,20 @@ body {
         flex-direction: column;
         gap: 1rem;
         align-items: center;
+    }
+}
+
+/* Filter form grid layout (desktop by default, stacks on mobile) */
+.filter-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+    .filter-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem;
     }
 }
