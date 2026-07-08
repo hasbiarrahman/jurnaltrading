@@ -1,6 +1,6 @@
-const CACHE_NAME = 'pelagic-cache-v1.1';
+const CACHE_NAME = 'pelagic-cache-v1.2';
 const ASSETS = [
-  '/',
+  '/login',
   '/css/dashboard.css',
   '/manifest.json',
   '/icons/icon-192.png',
@@ -67,7 +67,7 @@ self.addEventListener('fetch', event => {
         .catch(() => {
           // Offline fallback
           return caches.match(event.request).then(cachedResponse => {
-            return cachedResponse || caches.match('/');
+            return cachedResponse || caches.match('/login');
           });
         })
     );
