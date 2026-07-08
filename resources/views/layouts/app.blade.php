@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') - Pelagic Dashboard</title>
+    <!-- PWA Configuration -->
+    <meta name="theme-color" content="#060713">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/icon-192.png') }}">
     <!-- Premium Stylesheet with Cache Busting -->
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ filemtime(public_path('css/dashboard.css')) }}">
     <!-- Chart.js for data visualization -->
@@ -127,7 +131,17 @@
                 });
             });
         }
-    });
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered successfully.', reg))
+                    .catch(err => console.log('Service Worker registration failed.', err));
+            });
+        }
     </script>
 </body>
 </html>

@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Pelagic Dashboard</title>
+    <!-- PWA Configuration -->
+    <meta name="theme-color" content="#060713">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/icon-192.png') }}">
     <!-- CSS File -->
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
@@ -49,5 +53,16 @@
             <strong>admin@pelagic.com</strong> / <strong>admin123</strong>
         </div>
     </div>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered successfully.', reg))
+                    .catch(err => console.log('Service Worker registration failed.', err));
+            });
+        }
+    </script>
 </body>
 </html>

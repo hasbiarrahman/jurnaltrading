@@ -1,0 +1,24 @@
+{
+  "name": "Pelagic Trading Journal Dashboard",
+  "short_name": "Pelagic",
+  "description": "Progressive Web App for monitoring Pelagic Capital Tokocrypto Portfolio and Trading Journal.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#060713",
+  "theme_color": "#060713",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
