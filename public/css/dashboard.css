@@ -242,6 +242,7 @@ body {
     padding: 1.75rem;
     box-shadow: var(--shadow-neon);
     transition: var(--transition-smooth);
+    min-width: 0; /* Prevents card from stretching parent grid/flex containers */
 }
 
 .glass-card:hover {
@@ -858,4 +859,11 @@ body {
         grid-template-columns: 1fr !important;
         gap: 0.75rem;
     }
+}
+
+/* 2-column form grids that should NOT stack on mobile (e.g. short numeric inputs) */
+.form-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
 }

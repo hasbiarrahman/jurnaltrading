@@ -43,7 +43,7 @@
                 </select>
             </div>
 
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-grid-2col" style="margin-bottom: 1rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="trade_price" class="form-label">Harga Aset (USDT)</label>
                     <input type="number" name="price" id="trade_price" step="any" class="form-control" placeholder="0.00" required>
@@ -62,7 +62,7 @@
             <div style="border-top: 1px solid var(--border-light); margin: 1.5rem 0; padding-top: 1rem;">
                 <span class="form-label" style="font-weight: 700; color: var(--color-primary);">Log Indikator Teknikal (1D)</span>
                 
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; margin-top: 0.5rem;">
+                <div class="form-grid-2col" style="margin-bottom: 1rem; margin-top: 0.5rem;">
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="stoch_rsi_k" class="form-label">Stoch RSI %K</label>
                         <input type="number" name="stoch_rsi_k" id="stoch_rsi_k" step="any" class="form-control" placeholder="0.00">
@@ -103,7 +103,7 @@
     </div>
 
     <!-- Right Column: Filter and Trades List Table -->
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div style="display: flex; flex-direction: column; gap: 1.5rem; min-width: 0;">
         <!-- Filters panel -->
         <div class="glass-card" style="padding: 1.25rem;">
             <form action="{{ route('trade.index') }}" method="GET" class="filter-grid">
