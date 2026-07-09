@@ -150,12 +150,12 @@ class TokocryptoService
             foreach ($trades as $trade) {
                 $symbol = $trade->symbol;
                 
-                // Identify the main crypto asset (e.g. BTC from BTCUSDT)
-                // Default base assets: USDT, BIDR, IDRT, BUSD
+                // Identify the main crypto asset and the quote asset
+                // Common quote assets: USDT, BIDR, IDRT, BUSD, USDC, BTC, ETH, BNB
                 $asset = $symbol;
-                $quote = 'USDT';
+                $quote = null;
                 
-                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD'] as $q) {
+                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB'] as $q) {
                     if (str_ends_with($symbol, $q)) {
                         $asset = substr($symbol, 0, -strlen($q));
                         $quote = $q;
@@ -166,17 +166,30 @@ class TokocryptoService
                 if (!isset($holdings[$asset])) {
                     $holdings[$asset] = 0.0;
                 }
+                if ($quote && !isset($holdings[$quote])) {
+                    $holdings[$quote] = 0.0;
+                }
+
+                $tradeAmount = (float)$trade->amount;
+                $tradePrice = (float)$trade->price;
+                $totalCost = $tradeAmount * $tradePrice;
 
                 if (strtoupper($trade->type) === 'BUY') {
-                    $holdings[$asset] += (float)$trade->amount;
+                    $holdings[$asset] += $tradeAmount;
+                    if ($quote) {
+                        $holdings[$quote] -= $totalCost;
+                    }
                 } else {
-                    $holdings[$asset] -= (float)$trade->amount;
+                    $holdings[$asset] -= $tradeAmount;
+                    if ($quote) {
+                        $holdings[$quote] += $totalCost;
+                    }
                 }
             }
 
             foreach ($holdings as $asset => $amount) {
-                if ($amount > 0.00001) {
-                    // For mock portfolio, we assume funds are 'free' (not locked in open orders)
+                $isCash = in_array($asset, ['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC']);
+                if ($amount > 0.00001 || ($isCash && abs($amount) > 0.00001)) {
                     $balances[$asset] = [
                         'asset' => $asset,
                         'free' => $amount,

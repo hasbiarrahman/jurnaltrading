@@ -69,7 +69,7 @@
 
             <div style="background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.2); padding: 1rem; border-radius: 10px; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
                 <strong style="color: var(--color-primary); display: block; margin-bottom: 0.25rem;">Informasi Fallback</strong>
-                Jika API Secret dikosongkan, sistem tetap berfungsi normal dengan memperhitungkan saldo portofolio dan average buy price secara kalkulatif dari riwayat transaksi yang Anda catat pada menu <strong>Jurnal Trading</strong>.
+                Jika API Secret dikosongkan, sistem tetap berfungsi normal dengan memperhitungkan saldo portofolio dan average buy price secara kalkulatif dari riwayat transaksi yang Anda catat pada menu <strong>Jurnal Transaksi</strong>.
             </div>
         </div>
     </div>

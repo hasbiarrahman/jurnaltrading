@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Jurnal Trading')
+@section('title', 'Jurnal Transaksi')
 
 @section('content')
 <div class="page-header">
     <div class="page-title">
-        <h1>Jurnal Trading</h1>
+        <h1>Jurnal Transaksi</h1>
         <p>Log transaksi trading beserta data indikator Stochastic RSI dan Divergence pada saat transaksi</p>
     </div>
 </div>
