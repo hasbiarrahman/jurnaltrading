@@ -34,7 +34,7 @@
                 <label for="tokocrypto_api_key" class="form-label">Tokocrypto API Key</label>
                 <input type="text" name="tokocrypto_api_key" id="tokocrypto_api_key" class="form-control" placeholder="Masukkan API Key Anda" value="{{ old('tokocrypto_api_key', $apiKey) }}">
                 <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
-                    *API Key saat ini diinisialisasi berdasarkan data dari Pelagic Capital.
+                    *API Key saat ini diinisialisasi berdasarkan data dari Jurnal Trading.
                 </small>
             </div>
 
@@ -61,7 +61,7 @@
             
             <ol style="margin-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; color: var(--text-muted);">
                 <li>Buka akun Tokocrypto Anda lalu pilih menu <strong>Manajemen API</strong>.</li>
-                <li>Buat API Key baru dengan nama identifikasi yang mudah diingat (misal: <em>Pelagic Dashboard</em>).</li>
+                <li>Buat API Key baru dengan nama identifikasi yang mudah diingat (misal: <em>Jurnal Trading</em>).</li>
                 <li>Pada pengaturan izin API, pilih <strong>Enable Reading</strong> (Wajib) untuk membaca portofolio.</li>
                 <li><strong style="color: var(--color-danger);">PENTING:</strong> <strong>Jangan aktifkan</strong> izin <em>Enable Withdrawals</em> untuk keamanan dana Anda.</li>
                 <li>Salin <strong>API Key</strong> dan <strong>API Secret</strong> ke form di sebelah kiri lalu klik simpan.</li>

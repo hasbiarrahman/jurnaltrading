@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Pelagic Dashboard</title>
+    <title>Login - Jurnal Trading</title>
     <!-- PWA Configuration -->
     <meta name="theme-color" content="#060713">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
@@ -14,7 +14,7 @@
 <body class="login-wrapper">
     <div class="glass-card login-card">
         <div class="login-header">
-            <h2 class="sidebar-logo" style="display:inline-block; font-size:2rem; margin-bottom:0.5rem;">Pelagic<span>Dashboard</span></h2>
+            <h2 class="sidebar-logo" style="display:inline-block; font-size:2rem; margin-bottom:0.5rem;">Jurnal<span>Trading</span></h2>
             <p>Silakan login untuk memantau trading akun Tokocrypto Anda</p>
         </div>
 

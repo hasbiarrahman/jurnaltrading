@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title') - Pelagic Dashboard</title>
+    <title>@yield('title') - Jurnal Trading</title>
     <!-- PWA Configuration -->
     <meta name="theme-color" content="#060713">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
@@ -22,7 +22,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
         </button>
-        <div class="sidebar-logo" style="font-size: 1.25rem;">Pelagic<span>Dashboard</span></div>
+        <div class="sidebar-logo" style="font-size: 1.25rem;">Jurnal<span>Trading</span></div>
         <div style="width: 24px;"></div> <!-- Spacer -->
     </header>
 
@@ -34,7 +34,7 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="avatar">P</div>
-                <div class="sidebar-logo">Pelagic<span>Capital</span></div>
+                <div class="sidebar-logo">Jurnal<span>Trading</span></div>
             </div>
             
             <ul class="sidebar-menu">

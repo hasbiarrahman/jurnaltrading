@@ -6,7 +6,7 @@
 <div class="page-header">
     <div class="page-title">
         <h1>Dashboard Overview</h1>
-        <p>Ringkasan performa akun trading Tokocrypto Pelagic Capital Anda</p>
+        <p>Ringkasan performa akun trading Tokocrypto Jurnal Trading Anda</p>
     </div>
     <div class="header-actions">
         <span class="badge {{ $portfolio['is_live'] ? 'badge-success' : 'badge-danger' }}">
