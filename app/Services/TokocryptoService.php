@@ -145,23 +145,16 @@ class TokocryptoService
         // Fallback: If not fetched from API, construct balance from trade logs in database
         if (!$fetchedFromApi) {
             $trades = Trade::orderBy('trade_time', 'asc')->get();
-            $holdings = [
-                'USDT' => 0.0,
-                'BIDR' => 0.0
-            ];
+            $holdings = [];
 
             foreach ($trades as $trade) {
                 $symbol = $trade->symbol;
                 
-                // Identify the main crypto asset and the quote asset
-                // Common quote assets: USDT, BIDR, IDRT, BUSD, USDC, BTC, ETH, BNB
+                // Identify the main crypto asset (e.g. BTC from BTCUSDT)
                 $asset = $symbol;
-                $quote = null;
-                
                 foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB'] as $q) {
                     if (str_ends_with($symbol, $q)) {
                         $asset = substr($symbol, 0, -strlen($q));
-                        $quote = $q;
                         break;
                     }
                 }
@@ -169,30 +162,16 @@ class TokocryptoService
                 if (!isset($holdings[$asset])) {
                     $holdings[$asset] = 0.0;
                 }
-                if ($quote && !isset($holdings[$quote])) {
-                    $holdings[$quote] = 0.0;
-                }
-
-                $tradeAmount = (float)$trade->amount;
-                $tradePrice = (float)$trade->price;
-                $totalCost = $tradeAmount * $tradePrice;
 
                 if (strtoupper($trade->type) === 'BUY') {
-                    $holdings[$asset] += $tradeAmount;
-                    if ($quote) {
-                        $holdings[$quote] -= $totalCost;
-                    }
+                    $holdings[$asset] += (float)$trade->amount;
                 } else {
-                    $holdings[$asset] -= $tradeAmount;
-                    if ($quote) {
-                        $holdings[$quote] += $totalCost;
-                    }
+                    $holdings[$asset] -= (float)$trade->amount;
                 }
             }
 
             foreach ($holdings as $asset => $amount) {
-                $isCash = in_array($asset, ['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC']);
-                if ($amount > 0.00001 || $isCash) {
+                if ($amount > 0.00001) {
                     $balances[$asset] = [
                         'asset' => $asset,
                         'free' => $amount,
