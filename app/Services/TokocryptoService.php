@@ -145,7 +145,10 @@ class TokocryptoService
         // Fallback: If not fetched from API, construct balance from trade logs in database
         if (!$fetchedFromApi) {
             $trades = Trade::orderBy('trade_time', 'asc')->get();
-            $holdings = [];
+            $holdings = [
+                'USDT' => 0.0,
+                'BIDR' => 0.0
+            ];
 
             foreach ($trades as $trade) {
                 $symbol = $trade->symbol;
@@ -189,7 +192,7 @@ class TokocryptoService
 
             foreach ($holdings as $asset => $amount) {
                 $isCash = in_array($asset, ['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC']);
-                if ($amount > 0.00001 || ($isCash && abs($amount) > 0.00001)) {
+                if ($amount > 0.00001 || $isCash) {
                     $balances[$asset] = [
                         'asset' => $asset,
                         'free' => $amount,
