@@ -8,7 +8,10 @@
         <h1>Portofolio Detail</h1>
         <p>Pantau saldo kepemilikan aset, harga rata-rata beli (average price), serta keuntungan/kerugian belum terealisasi</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <span id="countdownBadge" class="badge badge-neutral" style="font-family: monospace; font-size: 0.75rem; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-light); display: none;">
+            Refresh: <span id="countdownTimer">120</span>s
+        </span>
         <span class="badge {{ $is_live ? 'badge-success' : 'badge-danger' }}">
             {{ $is_live ? 'Koneksi API Tokocrypto: LIVE' : 'Mode Fallback: Database Trade Logs' }}
         </span>
@@ -144,4 +147,26 @@
         </table>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let timeLeft = 120; // 2 minutes (120 seconds)
+        const timerSpan = document.getElementById("countdownTimer");
+        const badgeSpan = document.getElementById("countdownBadge");
+        
+        if (timerSpan && badgeSpan) {
+            badgeSpan.style.display = "inline-flex";
+            const interval = setInterval(() => {
+                timeLeft--;
+                timerSpan.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+    });
+</script>
 @endsection
