@@ -54,13 +54,20 @@
         </div>
     </div>
 
-    <!-- PWA Service Worker Registration -->
+    <!-- PWA Service Worker Clean-up (Self-heals browsers stuck with crashed service workers) -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered successfully.', reg))
-                    .catch(err => console.log('Service Worker registration failed.', err));
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                let didUnregister = false;
+                for (let registration of registrations) {
+                    registration.unregister().then(success => {
+                        if (success && !didUnregister) {
+                            didUnregister = true;
+                            console.log('Crashed Service Worker unregistered successfully. Reloading page...');
+                            window.location.reload();
+                        }
+                    });
+                }
             });
         }
     </script>
