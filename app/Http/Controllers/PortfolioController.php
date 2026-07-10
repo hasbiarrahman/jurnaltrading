@@ -52,7 +52,7 @@ class PortfolioController extends Controller
 
                 // Detect quote currency of trade (e.g. BIDR, USDT, IDRT)
                 $quote = 'USDT';
-                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD'] as $q) {
+                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'IDR'] as $q) {
                     if (str_ends_with($tradeSymbol, $q) && strlen($tradeSymbol) > strlen($q)) {
                         $quote = $q;
                         break;

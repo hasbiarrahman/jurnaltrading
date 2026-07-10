@@ -152,7 +152,7 @@ class TokocryptoService
                 
                 // Identify the main crypto asset (e.g. BTC from BTCUSDT)
                 $asset = $symbol;
-                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB'] as $q) {
+                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB', 'IDR'] as $q) {
                     if (str_ends_with($symbol, $q) && strlen($symbol) > strlen($q)) {
                         $asset = substr($symbol, 0, -strlen($q));
                         break;
