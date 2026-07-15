@@ -17,6 +17,7 @@ class ScannerController extends Controller
         if (!File::exists($path)) {
             return response()->json([
                 'last_updated' => null,
+                'scanned_count' => 0,
                 'matches_count' => 0,
                 'matches' => []
             ]);

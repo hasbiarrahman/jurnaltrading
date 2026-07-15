@@ -124,6 +124,7 @@ class ScanAltcoins extends Command
             
             $outputData = [
                 'last_updated' => now()->toIso8601String(),
+                'scanned_count' => count($top150),
                 'matches_count' => count($matches),
                 'matches' => $matches
             ];

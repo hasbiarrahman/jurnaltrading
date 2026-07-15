@@ -112,7 +112,10 @@
 <div class="glass-card mb-6">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
         <div class="card-title" style="margin-bottom: 0;">Altcoin Scanner (Stoch RSI < 7 & RSI < 40)</div>
-        <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span id="scan-info" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace; display: none;">
+                Total dipindai: <span id="scan-total-scanned" style="color: var(--color-secondary); font-weight: 600;">0</span> | Ditemukan: <span id="scan-total-matches" style="color: var(--color-success); font-weight: 600;">0</span> koin |
+            </span>
             <span id="scan-last-updated" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">Terakhir diupdate: -</span>
             <button id="btn-trigger-scan" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border-radius: 6px; background-color: var(--color-primary); color: white; border: none; font-weight: 600;">
                 <svg id="scan-spinner" class="animate-spin" style="display: none; width: 14px; height: 14px; color: white;" fill="none" viewBox="0 0 24 24">
@@ -311,6 +314,9 @@
         const scanSpinner = document.getElementById("scan-spinner");
         const scanBtnText = document.getElementById("scan-btn-text");
         const scanLastUpdated = document.getElementById("scan-last-updated");
+        const scanInfo = document.getElementById("scan-info");
+        const scanTotalScanned = document.getElementById("scan-total-scanned");
+        const scanTotalMatches = document.getElementById("scan-total-matches");
         
         let lastUpdatedTimestamp = null;
         let pollingInterval = null;
@@ -323,6 +329,13 @@
                     if (data.last_updated) {
                         const date = new Date(data.last_updated);
                         scanLastUpdated.textContent = 'Terakhir diupdate: ' + date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+                        
+                        // Update scanned stats
+                        if (data.scanned_count !== undefined) {
+                            scanTotalScanned.textContent = data.scanned_count;
+                            scanTotalMatches.textContent = data.matches_count;
+                            scanInfo.style.display = 'inline-block';
+                        }
                         
                         // Check if background scan finished
                         if (lastUpdatedTimestamp && data.last_updated !== lastUpdatedTimestamp) {
