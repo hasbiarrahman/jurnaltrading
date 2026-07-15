@@ -32,32 +32,19 @@ class ScannerController extends Controller
     public function startScan()
     {
         try {
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                // Windows (Local XAMPP)
-                $cmd = "start /B C:\\xampp\\php\\php.exe " . base_path('artisan') . " scan:altcoins > NUL 2>&1";
-                pclose(popen($cmd, "r"));
-            } else {
-                // Linux / Unix (Production Cloud Hosting / VPS)
-                // Resolve PHP binary path dynamically or fallback to 'php'
-                $phpBinary = defined('PHP_BINARY') && PHP_BINARY ? PHP_BINARY : 'php';
-                
-                // Some shared hostings block PHP_BINARY, fallback to standard locations if needed
-                if (strpos($phpBinary, 'php-fpm') !== false) {
-                    $phpBinary = 'php';
-                }
-                
-                $cmd = "nohup {$phpBinary} " . base_path('artisan') . " scan:altcoins > /dev/null 2>&1 &";
-                exec($cmd);
-            }
+            // Run the Artisan command synchronously in the PHP request process
+            // This is 100% compatible with Hostinger and does not use shell exec() or node
+            \Illuminate\Support\Facades\Artisan::call('scan:altcoins');
 
             return response()->json([
                 'success' => true,
-                'message' => 'Scan triggered in the background.'
+                'message' => 'Altcoin scan completed successfully.'
             ]);
         } catch (\Exception $e) {
+            \Log::error("Altcoin scan failed: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to trigger scan: ' . $e->getMessage()
+                'message' => 'Failed to run scan: ' . $e->getMessage()
             ], 500);
         }
     }
