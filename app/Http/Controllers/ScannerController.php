@@ -20,11 +20,16 @@ class ScannerController extends Controller
                 'scanned_count' => 0,
                 'matches_count' => 0,
                 'matches' => []
-            ]);
+            ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
         }
 
         $data = json_decode(File::get($path), true);
-        return response()->json($data);
+        return response()->json($data)
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**

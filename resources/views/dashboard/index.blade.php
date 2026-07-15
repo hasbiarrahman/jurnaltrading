@@ -322,7 +322,7 @@
         let pollingInterval = null;
 
         function loadScannerResults() {
-            fetch('/api/scanner/results')
+            fetch('/api/scanner/results?_t=' + new Date().getTime())
                 .then(res => res.json())
                 .then(data => {
                     // Update last updated timestamp
