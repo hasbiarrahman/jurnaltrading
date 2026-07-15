@@ -37,7 +37,30 @@ class ScanAltcoins extends Command
             "BOME", "BABYDOGE", "TURBO", "MYRO", "COQ", "MOG", "WEN", "SLERF", 
             "POPCAT", "BRETT", "MEW", "DEGEN", "SNEK", "COCOS", "LUNC", "USTC"
         ];
-        
+        $fiatStables = ['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'IDR'];
+
+        $this->info('Fetching trade symbols from database...');
+        $journalAssets = [];
+        try {
+            $tradeSymbols = \App\Models\Trade::select('symbol')->distinct()->pluck('symbol')->toArray();
+            foreach ($tradeSymbols as $sym) {
+                $sym = strtoupper(trim($sym));
+                $base = $sym;
+                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB', 'IDR'] as $q) {
+                    if (str_ends_with($sym, $q) && strlen($sym) > strlen($q)) {
+                        $base = substr($sym, 0, -strlen($q));
+                        break;
+                    }
+                }
+                if (!in_array($base, $fiatStables) && !in_array($base, $memecoins)) {
+                    $journalAssets[] = $base;
+                }
+            }
+            $journalAssets = array_unique($journalAssets);
+        } catch (\Exception $e) {
+            $this->warn('Could not read trade journal assets: ' . $e->getMessage());
+        }
+
         $this->info('Fetching tickers from KuCoin...');
         try {
             $response = Http::timeout(10)->get('https://api.kucoin.com/api/v1/market/allTickers');
@@ -75,12 +98,44 @@ class ScanAltcoins extends Command
             });
             
             $top150 = array_slice($pairs, 0, 150);
-            $this->info('Scanning top ' . count($top150) . ' altcoins...');
             
-            $top150Chunks = array_chunk($top150, 30);
+            // Ensure all journal assets are included in the scan list
+            $scanSymbols = [];
+            foreach ($top150 as $p) {
+                $scanSymbols[$p['symbol']] = [
+                    'symbol' => $p['symbol'],
+                    'volume' => $p['volume'],
+                    'is_journal' => false
+                ];
+            }
+
+            foreach ($journalAssets as $asset) {
+                $pairSymbol = $asset . '-USDT';
+                if (isset($scanSymbols[$pairSymbol])) {
+                    $scanSymbols[$pairSymbol]['is_journal'] = true;
+                } else {
+                    $tickerVolume = 0.0;
+                    foreach ($json['data']['ticker'] as $t) {
+                        if ($t['symbol'] === $pairSymbol) {
+                            $tickerVolume = (float)$t['volValue'];
+                            break;
+                        }
+                    }
+                    $scanSymbols[$pairSymbol] = [
+                        'symbol' => $pairSymbol,
+                        'volume' => $tickerVolume,
+                        'is_journal' => true
+                    ];
+                }
+            }
+
+            $scanList = array_values($scanSymbols);
+            $this->info('Scanning ' . count($scanList) . ' altcoins...');
+            
+            $scanListChunks = array_chunk($scanList, 30);
             $responses = [];
             
-            foreach ($top150Chunks as $chunk) {
+            foreach ($scanListChunks as $chunk) {
                 $chunkResponses = Http::pool(function (Pool $pool) use ($chunk) {
                     foreach ($chunk as $pair) {
                         $pool->as($pair['symbol'])->timeout(10)->get("https://api.kucoin.com/api/v1/market/candles?symbol={$pair['symbol']}&type=1day");
@@ -91,7 +146,7 @@ class ScanAltcoins extends Command
             }
             
             $matches = [];
-            foreach ($top150 as $pair) {
+            foreach ($scanList as $pair) {
                 $symbol = $pair['symbol'];
                 $res = $responses[$symbol] ?? null;
                 if ($res && $res->successful()) {
@@ -109,14 +164,20 @@ class ScanAltcoins extends Command
                         $lastRsi = end($rsiValues);
                         $lastK = end($kValues);
                         
-                        if (!is_null($lastRsi) && !is_null($lastK) && !is_nan($lastRsi) && !is_nan($lastK) && $lastRsi < 40 && $lastK < 7) {
-                            $matches[] = [
-                                'symbol' => str_replace('-', '', $symbol),
-                                'rsi' => round($lastRsi, 2),
-                                'stochK' => round($lastK, 2),
-                                'price' => end($closes),
-                                'volume_24h' => $pair['volume']
-                            ];
+                        if (!is_null($lastRsi) && !is_null($lastK) && !is_nan($lastRsi) && !is_nan($lastK)) {
+                            $isJournal = $pair['is_journal'];
+                            $meetsFilter = ($lastRsi < 40 && $lastK < 7);
+                            
+                            if ($meetsFilter || $isJournal) {
+                                $matches[] = [
+                                    'symbol' => str_replace('-', '', $symbol),
+                                    'rsi' => round($lastRsi, 2),
+                                    'stochK' => round($lastK, 2),
+                                    'price' => end($closes),
+                                    'volume_24h' => $pair['volume'],
+                                    'is_journal' => $isJournal
+                                ];
+                            }
                         }
                     }
                 }
@@ -124,7 +185,7 @@ class ScanAltcoins extends Command
             
             $outputData = [
                 'last_updated' => now()->toIso8601String(),
-                'scanned_count' => count($top150),
+                'scanned_count' => count($scanList),
                 'matches_count' => count($matches),
                 'matches' => $matches
             ];

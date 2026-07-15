@@ -349,18 +349,27 @@
                     if (data.matches && data.matches.length > 0) {
                         let html = '';
                         data.matches.forEach(item => {
-                            const kColor = item.stochK < 3 ? '#00e676' : 'var(--color-primary)';
-                            const rsiColor = item.rsi < 30 ? 'badge-bullish' : 'badge-neutral';
+                            // Set StochRSI color based on oversold threshold (< 7)
+                            const kColor = item.stochK < 7 ? '#00e676' : 'rgba(255, 255, 255, 0.05)';
+                            const kTextColor = item.stochK < 7 ? 'black' : 'var(--text-muted)';
+                            
+                            // Set RSI color class based on threshold (< 40)
+                            const rsiClass = item.rsi < 40 ? 'badge-bullish' : 'badge-neutral';
+                            
+                            // Create a special badge for assets from the trade logs
+                            const journalBadge = item.is_journal ? `<span class="badge" style="background: rgba(147, 51, 234, 0.15); border: 1px solid rgba(147, 51, 234, 0.3); color: #c084fc; font-size: 0.7rem; margin-left: 0.5rem; padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 600;">Jurnal</span>` : '';
                             
                             html += `
                                 <tr>
-                                    <td style="font-weight: 700; color: white;">${item.symbol}</td>
+                                    <td style="font-weight: 700; color: white; display: inline-flex; align-items: center; min-height: 38px;">
+                                        ${item.symbol} ${journalBadge}
+                                    </td>
                                     <td style="font-family: monospace;">$${parseFloat(item.price).toFixed(4)}</td>
                                     <td>
-                                        <span class="badge" style="background-color: ${kColor}; color: black; font-weight: 700; font-family: monospace;">K: ${item.stochK.toFixed(2)}</span>
+                                        <span class="badge" style="background-color: ${kColor}; color: ${kTextColor}; font-weight: 700; font-family: monospace;">K: ${item.stochK.toFixed(2)}</span>
                                     </td>
                                     <td>
-                                        <span class="badge ${rsiColor}" style="font-family: monospace;">${item.rsi.toFixed(2)}</span>
+                                        <span class="badge ${rsiClass}" style="font-family: monospace;">${item.rsi.toFixed(2)}</span>
                                     </td>
                                     <td style="font-family: monospace; color: var(--text-muted);">$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(item.volume_24h)}</td>
                                     <td style="text-align: center;">
