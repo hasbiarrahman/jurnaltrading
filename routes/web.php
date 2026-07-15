@@ -66,6 +66,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/setting/database/export', [SettingController::class, 'exportDatabase'])->name('setting.database.export');
         Route::post('/setting/database/import', [SettingController::class, 'importDatabase'])->name('setting.database.import');
 
+        // Scanner Routes
+        Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');
+
         // Database Sync Routes (Browser-Bridge)
         Route::post('/api/database/apply-queries', [SettingController::class, 'applyPendingQueries'])->name('api.database.apply-queries');
 
@@ -73,6 +76,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/watchlist-metrics/{symbol}', [WatchlistController::class, 'getMetrics'])->name('api.watchlist-metrics');
         Route::get('/api/trade-live-stats/{symbol}', [TradeController::class, 'getLiveStats'])->name('api.trade-live-stats');
         Route::get('/api/scanner/results', [ScannerController::class, 'getResults'])->name('api.scanner.results');
+        Route::get('/api/scanner/all', [ScannerController::class, 'getAllResults'])->name('api.scanner.all');
         Route::post('/api/scanner/trigger', [ScannerController::class, 'startScan'])->name('api.scanner.trigger');
     });
 });

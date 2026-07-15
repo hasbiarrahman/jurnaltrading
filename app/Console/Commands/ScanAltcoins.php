@@ -146,10 +146,11 @@ class ScanAltcoins extends Command
             }
             
             $matches = [];
+            $allScanned = [];
             foreach ($scanList as $pair) {
                 $symbol = $pair['symbol'];
                 $res = $responses[$symbol] ?? null;
-                if ($res && $res->successful()) {
+                if ($res instanceof \Illuminate\Http\Client\Response && $res->successful()) {
                     $klines = $res->json();
                     if (($klines['code'] ?? '') === '200000' && isset($klines['data']) && count($klines['data']) >= 40) {
                         $closes = [];
@@ -168,16 +169,20 @@ class ScanAltcoins extends Command
                             $isJournal = $pair['is_journal'];
                             $meetsFilter = ($lastRsi < 40 && $lastK < 7);
                             
+                            $coinData = [
+                                'symbol' => str_replace('-', '', $symbol),
+                                'rsi' => round($lastRsi, 2),
+                                'stochK' => round($lastK, 2),
+                                'price' => end($closes),
+                                'volume_24h' => $pair['volume'],
+                                'is_journal' => $isJournal
+                            ];
+
                             if ($meetsFilter || $isJournal) {
-                                $matches[] = [
-                                    'symbol' => str_replace('-', '', $symbol),
-                                    'rsi' => round($lastRsi, 2),
-                                    'stochK' => round($lastK, 2),
-                                    'price' => end($closes),
-                                    'volume_24h' => $pair['volume'],
-                                    'is_journal' => $isJournal
-                                ];
+                                $matches[] = $coinData;
                             }
+                            
+                            $allScanned[] = $coinData;
                         }
                     }
                 }
@@ -194,7 +199,16 @@ class ScanAltcoins extends Command
             File::ensureDirectoryExists(dirname($resultsPath));
             File::put($resultsPath, json_encode($outputData, JSON_PRETTY_PRINT));
             
-            $this->info("Scan completed. " . count($matches) . " matches written to {$resultsPath}");
+            // Save all scanned tokens
+            $allData = [
+                'last_updated' => now()->toIso8601String(),
+                'scanned_count' => count($scanList),
+                'items' => $allScanned
+            ];
+            $allPath = storage_path('app/altcoin_scan_all.json');
+            File::put($allPath, json_encode($allData, JSON_PRETTY_PRINT));
+            
+            $this->info("Scan completed. " . count($matches) . " matches / " . count($allScanned) . " total items written.");
             return 0;
             
         } catch (\Exception $e) {

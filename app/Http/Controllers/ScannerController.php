@@ -54,4 +54,36 @@ class ScannerController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Render the Altcoin Scanner page.
+     */
+    public function index()
+    {
+        return view('scanner.index');
+    }
+
+    /**
+     * Get all scanned results.
+     */
+    public function getAllResults()
+    {
+        $path = storage_path('app/altcoin_scan_all.json');
+        
+        if (!File::exists($path)) {
+            return response()->json([
+                'last_updated' => null,
+                'scanned_count' => 0,
+                'items' => []
+            ])->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
+        }
+
+        $data = json_decode(File::get($path), true);
+        return response()->json($data)
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
+    }
 }
