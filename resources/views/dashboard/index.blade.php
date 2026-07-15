@@ -108,6 +108,44 @@
     </div>
 </div>
 
+<!-- Altcoin Scanner Section -->
+<div class="glass-card mb-6">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="card-title" style="margin-bottom: 0;">Altcoin Scanner (Stoch RSI < 7 & RSI < 40)</div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <span id="scan-last-updated" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">Terakhir diupdate: -</span>
+            <button id="btn-trigger-scan" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border-radius: 6px; background-color: var(--color-primary); color: white; border: none; font-weight: 600;">
+                <svg id="scan-spinner" class="animate-spin" style="display: none; width: 14px; height: 14px; color: white;" fill="none" viewBox="0 0 24 24">
+                    <circle style="opacity: 0.25; stroke: currentColor; stroke-width: 4;" cx="12" cy="12" r="10"></circle>
+                    <path style="opacity: 0.75; fill: currentColor;" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="scan-btn-text">Scan Sekarang</span>
+            </button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="custom-table table-wide" style="font-size: 0.88rem;">
+            <thead>
+                <tr>
+                    <th>Simbol</th>
+                    <th>Harga Aktual</th>
+                    <th>Stoch RSI %K</th>
+                    <th>RSI (1D)</th>
+                    <th>Volume 24h</th>
+                    <th style="text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="scanner-table-body">
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
+                        Memuat data hasil scan...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <!-- Recent Activity Log -->
 <div class="glass-card mb-6">
     <div class="card-title">Riwayat Perdagangan Terakhir</div>
@@ -266,6 +304,127 @@
                     setErrorState(symbol);
                 });
         });
+
+        // 3. Altcoin Scanner Integration
+        const tableBody = document.getElementById("scanner-table-body");
+        const btnTrigger = document.getElementById("btn-trigger-scan");
+        const scanSpinner = document.getElementById("scan-spinner");
+        const scanBtnText = document.getElementById("scan-btn-text");
+        const scanLastUpdated = document.getElementById("scan-last-updated");
+        
+        let lastUpdatedTimestamp = null;
+        let pollingInterval = null;
+
+        function loadScannerResults() {
+            fetch('/api/scanner/results')
+                .then(res => res.json())
+                .then(data => {
+                    // Update last updated timestamp
+                    if (data.last_updated) {
+                        const date = new Date(data.last_updated);
+                        scanLastUpdated.textContent = 'Terakhir diupdate: ' + date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+                        
+                        // Check if background scan finished
+                        if (lastUpdatedTimestamp && data.last_updated !== lastUpdatedTimestamp) {
+                            clearInterval(pollingInterval);
+                            setScanningState(false);
+                        }
+                        lastUpdatedTimestamp = data.last_updated;
+                    }
+
+                    // Render matches
+                    if (data.matches && data.matches.length > 0) {
+                        let html = '';
+                        data.matches.forEach(item => {
+                            const kColor = item.stochK < 3 ? '#00e676' : 'var(--color-primary)';
+                            const rsiColor = item.rsi < 30 ? 'badge-bullish' : 'badge-neutral';
+                            
+                            html += `
+                                <tr>
+                                    <td style="font-weight: 700; color: white;">${item.symbol}</td>
+                                    <td style="font-family: monospace;">$${parseFloat(item.price).toFixed(4)}</td>
+                                    <td>
+                                        <span class="badge" style="background-color: ${kColor}; color: black; font-weight: 700; font-family: monospace;">K: ${item.stochK.toFixed(2)}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${rsiColor}" style="font-family: monospace;">${item.rsi.toFixed(2)}</span>
+                                    </td>
+                                    <td style="font-family: monospace; color: var(--text-muted);">$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(item.volume_24h)}</td>
+                                    <td style="text-align: center;">
+                                        <a href="/trade?symbol=${item.symbol}" class="badge badge-success" style="text-decoration: none; display: inline-block; padding: 0.35rem 0.65rem;">Jurnal Trade</a>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableBody.innerHTML = html;
+                    } else {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                                    Tidak ada koin yang memenuhi kriteria (Stoch RSI < 7 & RSI < 40) saat ini.
+                                </td>
+                            </tr>
+                        `;
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to load scanner results", err);
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--color-danger); padding: 2rem 0; font-weight: 600;">
+                                Gagal memuat data hasil scan.
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        function setScanningState(isScanning) {
+            if (isScanning) {
+                btnTrigger.disabled = true;
+                scanSpinner.style.display = 'inline-block';
+                scanBtnText.textContent = 'Memindai...';
+                btnTrigger.style.opacity = '0.7';
+            } else {
+                btnTrigger.disabled = false;
+                scanSpinner.style.display = 'none';
+                scanBtnText.textContent = 'Scan Sekarang';
+                btnTrigger.style.opacity = '1';
+            }
+        }
+
+        btnTrigger.addEventListener("click", function() {
+            setScanningState(true);
+            
+            // Get CSRF Token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            fetch('/api/scanner/trigger', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Start polling scanner results every 3 seconds
+                    pollingInterval = setInterval(loadScannerResults, 3000);
+                } else {
+                    alert("Gagal memulai scan: " + data.message);
+                    setScanningState(false);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to trigger scan", err);
+                alert("Gagal mengirim request scan.");
+                setScanningState(false);
+            });
+        });
+
+        // Load initial results
+        loadScannerResults();
 
         function formatPrice(price, symbol) {
             if (symbol.endsWith('BIDR') || symbol.endsWith('IDRT')) {

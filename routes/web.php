@@ -7,6 +7,7 @@ use App\Http\Controllers\TradeController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\ScannerController;
 use Illuminate\Support\Facades\Route;
 
 // Public Auth Routes
@@ -71,5 +72,7 @@ Route::middleware(['auth'])->group(function () {
         // Async JSON API routes
         Route::get('/api/watchlist-metrics/{symbol}', [WatchlistController::class, 'getMetrics'])->name('api.watchlist-metrics');
         Route::get('/api/trade-live-stats/{symbol}', [TradeController::class, 'getLiveStats'])->name('api.trade-live-stats');
+        Route::get('/api/scanner/results', [ScannerController::class, 'getResults'])->name('api.scanner.results');
+        Route::post('/api/scanner/trigger', [ScannerController::class, 'startScan'])->name('api.scanner.trigger');
     });
 });
