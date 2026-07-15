@@ -97,11 +97,11 @@ class ScanAltcoins extends Command
                 return $b['volume'] <=> $a['volume'];
             });
             
-            $top150 = array_slice($pairs, 0, 150);
+            $top500 = array_slice($pairs, 0, 500);
             
             // Ensure all journal assets are included in the scan list
             $scanSymbols = [];
-            foreach ($top150 as $p) {
+            foreach ($top500 as $p) {
                 $scanSymbols[$p['symbol']] = [
                     'symbol' => $p['symbol'],
                     'volume' => $p['volume'],
@@ -142,7 +142,7 @@ class ScanAltcoins extends Command
                     }
                 });
                 $responses = array_merge($responses, $chunkResponses);
-                usleep(300000); // 300ms sleep between chunks to avoid KuCoin rate limit
+                usleep(500000); // 500ms sleep between chunks to avoid KuCoin rate limit
             }
             
             $matches = [];
