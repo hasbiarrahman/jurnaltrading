@@ -54,6 +54,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/trade/{id}', [TradeController::class, 'update'])->name('trade.update');
         Route::delete('/trade/{id}', [TradeController::class, 'destroy'])->name('trade.destroy');
 
+        // Realized PNL Route
+        Route::get('/pnl', [PortfolioController::class, 'pnl'])->name('portfolio.pnl');
+
         // User Management Routes
         Route::get('/user', [UserController::class, 'index'])->name('user.index');
         Route::post('/user', [UserController::class, 'store'])->name('user.store');

@@ -128,4 +128,161 @@ class PortfolioController extends Controller
             'is_live' => $portfolio['is_live']
         ]);
     }
+
+    /**
+     * Display realized Profit & Loss page.
+     */
+    public function pnl(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        // Fetch all BUY and SELL trades ordered chronologically
+        $trades = Trade::whereIn('type', ['BUY', 'SELL'])
+            ->orderBy('trade_time', 'asc')
+            ->get();
+
+        $prices = $this->tokocryptoService->getAllPrices();
+        
+        // Fetch current USDT IDR rate
+        $portfolio = $this->tokocryptoService->getPortfolio();
+        $usdtIdr = $portfolio['usdt_idr_rate'] ?? 16000.0;
+
+        $fiatStables = ['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'IDR'];
+
+        // Group trades by base asset
+        $tradesByAsset = [];
+        foreach ($trades as $trade) {
+            $symbol = strtoupper(trim($trade->symbol));
+            
+            // Find base asset
+            $base = $symbol;
+            $quote = 'USDT';
+            foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB', 'IDR'] as $q) {
+                if (str_ends_with($symbol, $q) && strlen($symbol) > strlen($q)) {
+                    $base = substr($symbol, 0, -strlen($q));
+                    $quote = $q;
+                    break;
+                }
+            }
+
+            // Exclude USDT, IDR and stablecoins
+            if (in_array($base, $fiatStables)) {
+                continue;
+            }
+
+            $trade->base_asset = $base;
+            $trade->quote_asset = $quote;
+            $tradesByAsset[$base][] = $trade;
+        }
+
+        $allRealizedPnl = [];
+        $assetSummaries = [];
+
+        foreach ($tradesByAsset as $asset => $assetTrades) {
+            $runningAmount = 0.0;
+            $runningCostUsdt = 0.0;
+
+            $totalAssetSold = 0.0;
+            $totalAssetPnlUsdt = 0.0;
+
+            foreach ($assetTrades as $trade) {
+                $amount = (float)$trade->amount;
+                $price = (float)$trade->price;
+                $quote = $trade->quote_asset;
+
+                // Standardize trade price to USDT
+                $priceInUsdt = $price;
+                if ($quote === 'BIDR' || $quote === 'IDRT' || $quote === 'IDR') {
+                    $rate = $prices['USDTIDR'] ?? ($prices['USDT' . $quote] ?? ($prices['USDTIDRT'] ?? 16000.0));
+                    if ($rate > 100) {
+                        $priceInUsdt = $price / $rate;
+                    }
+                }
+
+                $type = strtoupper(trim($trade->type));
+
+                if ($type === 'BUY') {
+                    $runningAmount += $amount;
+                    $runningCostUsdt += ($priceInUsdt * $amount);
+                } elseif ($type === 'SELL') {
+                    $avgBuyPriceUsdt = $runningAmount > 0 ? ($runningCostUsdt / $runningAmount) : 0.0;
+                    
+                    // Realized PNL for this sell
+                    $pnlUsdt = ($priceInUsdt - $avgBuyPriceUsdt) * $amount;
+
+                    // Apply date filter
+                    $tradeTime = date('Y-m-d', strtotime($trade->trade_time));
+                    $isInRange = true;
+                    if ($startDate && $tradeTime < $startDate) {
+                        $isInRange = false;
+                    }
+                    if ($endDate && $tradeTime > $endDate) {
+                        $isInRange = false;
+                    }
+
+                    if ($isInRange) {
+                        $allRealizedPnl[] = [
+                            'id' => $trade->id,
+                            'asset' => $asset,
+                            'symbol' => $trade->symbol,
+                            'amount' => $amount,
+                            'sell_price_usdt' => $priceInUsdt,
+                            'avg_buy_price_usdt' => $avgBuyPriceUsdt,
+                            'pnl_usdt' => $pnlUsdt,
+                            'trade_time' => $trade->trade_time,
+                            'notes' => $trade->notes
+                        ];
+
+                        $totalAssetSold += $amount;
+                        $totalAssetPnlUsdt += $pnlUsdt;
+                    }
+
+                    // Adjust holdings after sell
+                    $runningAmount = max(0.0, $runningAmount - $amount);
+                    $runningCostUsdt = $runningAmount * $avgBuyPriceUsdt;
+                }
+            }
+
+            if ($totalAssetSold > 0) {
+                $assetSummaries[$asset] = [
+                    'asset' => $asset,
+                    'total_sold' => $totalAssetSold,
+                    'pnl_usdt' => $totalAssetPnlUsdt,
+                    'pnl_idr' => $totalAssetPnlUsdt * $usdtIdr
+                ];
+            }
+        }
+
+        // Sort realized trades by trade time descending
+        usort($allRealizedPnl, function ($a, $b) {
+            return strcmp($b['trade_time'], $a['trade_time']);
+        });
+
+        // Calculate grand totals
+        $totalProfitUsdt = 0.0;
+        $totalLossUsdt = 0.0;
+        foreach ($allRealizedPnl as $pnl) {
+            if ($pnl['pnl_usdt'] > 0) {
+                $totalProfitUsdt += $pnl['pnl_usdt'];
+            } else {
+                $totalLossUsdt += abs($pnl['pnl_usdt']);
+            }
+        }
+        $netPnlUsdt = $totalProfitUsdt - $totalLossUsdt;
+
+        return view('portfolio.pnl', [
+            'pnl_records' => $allRealizedPnl,
+            'asset_summaries' => $assetSummaries,
+            'total_profit_usdt' => $totalProfitUsdt,
+            'total_profit_idr' => $totalProfitUsdt * $usdtIdr,
+            'total_loss_usdt' => $totalLossUsdt,
+            'total_loss_idr' => $totalLossUsdt * $usdtIdr,
+            'net_pnl_usdt' => $netPnlUsdt,
+            'net_pnl_idr' => $netPnlUsdt * $usdtIdr,
+            'usdt_idr_rate' => $usdtIdr,
+            'start_date' => $startDate,
+            'end_date' => $endDate
+        ]);
+    }
 }
