@@ -64,6 +64,9 @@
             <button class="btn btn-tab" data-filter="oversold" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.05); color: var(--text-muted);">
                 Jenuh Jual (0)
             </button>
+            <button class="btn btn-tab" data-filter="double_bottom" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                Double Bottom (0)
+            </button>
             <button class="btn btn-tab" data-filter="journal" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.05); color: var(--text-muted);">
                 Aset Jurnal (0)
             </button>
@@ -167,6 +170,7 @@
     function calculateStats() {
         const total = scannerItems.length;
         const oversold = scannerItems.filter(item => item.rsi < 40 && item.stochK < 7).length;
+        const doubleBottom = scannerItems.filter(item => item.is_double_bottom).length;
         const journal = scannerItems.filter(item => item.is_journal).length;
         
         statTotalScanned.textContent = total;
@@ -176,6 +180,7 @@
         // Update tab buttons counts
         document.querySelector('[data-filter="all"]').textContent = `Semua (${total})`;
         document.querySelector('[data-filter="oversold"]').textContent = `Jenuh Jual (${oversold})`;
+        document.querySelector('[data-filter="double_bottom"]').textContent = `Double Bottom (${doubleBottom})`;
         document.querySelector('[data-filter="journal"]').textContent = `Aset Jurnal (${journal})`;
     }
 
@@ -187,6 +192,8 @@
             let matchesTab = true;
             if (currentFilter === 'oversold') {
                 matchesTab = (item.rsi < 40 && item.stochK < 7);
+            } else if (currentFilter === 'double_bottom') {
+                matchesTab = item.is_double_bottom;
             } else if (currentFilter === 'journal') {
                 matchesTab = item.is_journal;
             }
@@ -218,9 +225,17 @@
                 const rsiClass = item.rsi < 40 ? 'badge-bullish' : 'badge-neutral';
                 
                 const isOversold = (item.rsi < 40 && item.stochK < 7);
-                const statusBadge = isOversold 
-                    ? `<span class="badge badge-success" style="font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px;">Oversold</span>`
-                    : `<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">Neutral</span>`;
+                let badges = [];
+                if (isOversold) {
+                    badges.push(`<span class="badge badge-success" style="font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px;">Oversold</span>`);
+                }
+                if (item.is_double_bottom) {
+                    badges.push(`<span class="badge" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px;">Double Bottom</span>`);
+                }
+                if (badges.length === 0) {
+                    badges.push(`<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted); font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">Neutral</span>`);
+                }
+                const statusBadge = badges.join(' ');
                 
                 const journalBadge = item.is_journal ? `<span class="badge" style="background: rgba(147, 51, 234, 0.15); border: 1px solid rgba(147, 51, 234, 0.3); color: #c084fc; font-size: 0.7rem; margin-left: 0.5rem; padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 600;">Jurnal</span>` : '';
                 

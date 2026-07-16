@@ -167,7 +167,8 @@ class ScanAltcoins extends Command
                         
                         if (!is_null($lastRsi) && !is_null($lastK) && !is_nan($lastRsi) && !is_nan($lastK)) {
                             $isJournal = $pair['is_journal'];
-                            $meetsFilter = ($lastRsi < 40 && $lastK < 7);
+                            $isDoubleBottom = $this->detectDoubleBottom($closes);
+                            $meetsFilter = ($lastRsi < 40 && $lastK < 7) || $isDoubleBottom;
                             
                             $coinData = [
                                 'symbol' => str_replace('-', '', $symbol),
@@ -175,7 +176,8 @@ class ScanAltcoins extends Command
                                 'stochK' => round($lastK, 2),
                                 'price' => end($closes),
                                 'volume_24h' => $pair['volume'],
-                                'is_journal' => $isJournal
+                                'is_journal' => $isJournal,
+                                'is_double_bottom' => $isDoubleBottom
                             ];
 
                             if ($meetsFilter || $isJournal) {
@@ -263,5 +265,114 @@ class ScanAltcoins extends Command
             $k[$i] = $sum / $smoothK;
         }
         return $k;
+    }
+
+    /**
+     * Detect if the close prices form a Double Bottom chart pattern.
+     */
+    private function detectDoubleBottom(array $closes): bool
+    {
+        $n = count($closes);
+        if ($n < 30) {
+            return false;
+        }
+
+        // Analyze the last 40 daily candles
+        $windowSize = min(40, $n);
+        $data = array_slice($closes, -$windowSize);
+        
+        $lows = [];
+        $highs = [];
+        
+        // Simple swing low/high detection with window size 3
+        $w = 3;
+        for ($i = $w; $i < count($data) - $w; $i++) {
+            $val = $data[$i];
+            
+            // Check swing low
+            $isLow = true;
+            for ($j = -$w; $j <= $w; $j++) {
+                if ($data[$i + $j] < $val) {
+                    $isLow = false;
+                    break;
+                }
+            }
+            if ($isLow) {
+                $lows[] = ['index' => $i, 'price' => $val];
+            }
+            
+            // Check swing high
+            $isHigh = true;
+            for ($j = -$w; $j <= $w; $j++) {
+                if ($data[$i + $j] > $val) {
+                    $isHigh = false;
+                    break;
+                }
+            }
+            if ($isHigh) {
+                $highs[] = ['index' => $i, 'price' => $val];
+            }
+        }
+
+        // We need at least 2 lows and 1 high
+        if (count($lows) < 2) {
+            return false;
+        }
+
+        // Check pairs of lows to see if they form a double bottom
+        for ($a = 0; $a < count($lows) - 1; $a++) {
+            for ($b = $a + 1; $b < count($lows); $b++) {
+                $low1 = $lows[$a];
+                $low2 = $lows[$b];
+                
+                // Lows must be separated by some distance (e.g. at least 5 candles)
+                $distance = $low2['index'] - $low1['index'];
+                if ($distance < 5 || $distance > 30) {
+                    continue;
+                }
+                
+                // The two bottoms must be at a similar price level (within 4% tolerance)
+                $priceDiff = abs($low1['price'] - $low2['price']) / min($low1['price'], $low2['price']);
+                if ($priceDiff > 0.04) {
+                    continue;
+                }
+                
+                // Find the highest peak between low1 and low2
+                $peakPrice = 0.0;
+                $peakIndex = -1;
+                for ($k = $low1['index'] + 1; $k < $low2['index']; $k++) {
+                    if ($data[$k] > $peakPrice) {
+                        $peakPrice = $data[$k];
+                        $peakIndex = $k;
+                    }
+                }
+                
+                if ($peakIndex === -1) {
+                    continue;
+                }
+                
+                // The peak must be significantly higher than the bottoms (e.g. at least 3% higher)
+                $avgBottom = ($low1['price'] + $low2['price']) / 2.0;
+                $peakGain = ($peakPrice - $avgBottom) / $avgBottom;
+                if ($peakGain < 0.03) {
+                    continue;
+                }
+                
+                // The current price should be above the second bottom, indicating it has bounced
+                $currentPrice = end($data);
+                if ($currentPrice < $low2['price']) {
+                    continue;
+                }
+                
+                // The current price should not have broken way past the neckline peak (max 15% above peak)
+                if ($currentPrice > $peakPrice * 1.15) {
+                    continue;
+                }
+                
+                return true;
+            }
+        }
+        
+        return false;
     }
 }
