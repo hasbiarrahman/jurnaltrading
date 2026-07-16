@@ -350,8 +350,7 @@
                         <td style="font-family: monospace; color: var(--text-muted);">$${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(item.volume_24h)}</td>
                         <td style="text-align: center;">${statusBadge}</td>
                         <td style="text-align: center;">
-                            <a href="/trade?symbol=${item.symbol}" class="badge badge-success" style="text-decoration: none; display: inline-block; padding: 0.35rem 0.65rem;">Jurnal Trade</a>
-                            ${currentFilter === 'double_bottom' ? `<button onclick="startAnalysis('${item.symbol}')" class="badge badge-primary" style="margin-left: 0.5rem; border: none; cursor: pointer; display: inline-block; padding: 0.35rem 0.65rem; font-family: inherit; font-weight: 600; line-height: normal; vertical-align: middle;">Mulai Analisa</button>` : ''}
+                            ${currentFilter === 'double_bottom' ? `<button onclick="startAnalysis('${item.symbol}')" class="badge badge-primary" style="border: none; cursor: pointer; display: inline-block; padding: 0.35rem 0.65rem; font-family: inherit; font-weight: 600; line-height: normal; vertical-align: middle;">Mulai Analisa</button>` : '-'}
                         </td>
                     </tr>
                 `;
