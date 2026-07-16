@@ -26,7 +26,7 @@
             <div id="method_container"></div>
             
             <div class="form-group">
-                <label for="trade_symbol" class="form-label">Simbol Aset (e.g. BTCUSDT)</label>
+                <label for="trade_symbol" class="form-label" id="label_trade_symbol">Simbol Aset (e.g. BTCUSDT)</label>
                 <div style="display: flex; gap: 0.5rem;">
                     <input type="text" name="symbol" id="trade_symbol" class="form-control" placeholder="BTCUSDT" style="text-transform: uppercase;" required>
                     <button type="button" id="btnFetchStats" class="btn btn-secondary" style="padding: 0.6rem; font-size: 0.75rem; white-space: nowrap;" title="Ambil data live dari pasar">
@@ -46,12 +46,12 @@
             </div>
 
             <div class="form-grid-2col" style="margin-bottom: 1rem;">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="trade_price" class="form-label">Harga Aset (USDT)</label>
+                <div class="form-group" id="group_trade_price" style="margin-bottom: 0;">
+                    <label for="trade_price" class="form-label" id="label_trade_price">Harga Aset (USDT)</label>
                     <input type="number" name="price" id="trade_price" step="any" class="form-control" placeholder="0.00" required>
                 </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="trade_amount" class="form-label">Jumlah Aset</label>
+                <div class="form-group" id="group_trade_amount" style="margin-bottom: 0;">
+                    <label for="trade_amount" class="form-label" id="label_trade_amount">Jumlah Aset</label>
                     <input type="number" name="amount" id="trade_amount" step="any" class="form-control" placeholder="0.00" required>
                 </div>
             </div>
@@ -61,7 +61,7 @@
                 <input type="datetime-local" name="trade_time" id="trade_time" class="form-control" required>
             </div>
 
-            <div style="border-top: 1px solid var(--border-light); margin: 1.5rem 0; padding-top: 1rem;">
+            <div id="group_technical_indicators" style="border-top: 1px solid var(--border-light); margin: 1.5rem 0; padding-top: 1rem;">
                 <span class="form-label" style="font-weight: 700; color: var(--color-primary);">Log Indikator Teknikal (1D)</span>
                 
                 <div class="form-grid-2col" style="margin-bottom: 1rem; margin-top: 0.5rem;">
@@ -287,6 +287,49 @@
         const dInput = document.getElementById("stoch_rsi_d");
         const divSelect = document.getElementById("divergence");
 
+        // Deposit / Withdraw UI Adjuster
+        const typeSelect = document.getElementById("trade_type");
+        const symbolLabel = document.getElementById("label_trade_symbol");
+        const priceGroup = document.getElementById("group_trade_price");
+        const amountLabel = document.getElementById("label_trade_amount");
+        const technicalIndicators = document.getElementById("group_technical_indicators");
+
+        function adjustFormForType() {
+            if (!typeSelect) return;
+            const type = typeSelect.value;
+            if (type === 'DEPOSIT' || type === 'WITHDRAW') {
+                if (symbolLabel) symbolLabel.textContent = "Mata Uang Kas (e.g. USDT, BIDR)";
+                if (symbolInput) symbolInput.placeholder = "USDT atau BIDR";
+                if (btnFetch) btnFetch.style.display = "none";
+                if (priceGroup) priceGroup.style.display = "none";
+                if (priceInput) {
+                    priceInput.value = "1";
+                    priceInput.required = false;
+                }
+                if (amountLabel) amountLabel.textContent = "Nominal Uang";
+                if (technicalIndicators) technicalIndicators.style.display = "none";
+            } else {
+                if (symbolLabel) symbolLabel.textContent = "Simbol Aset (e.g. BTCUSDT)";
+                if (symbolInput) symbolInput.placeholder = "BTCUSDT";
+                if (btnFetch) btnFetch.style.display = "inline-block";
+                if (priceGroup) priceGroup.style.display = "block";
+                if (priceInput) {
+                    if (priceInput.value === "1") {
+                        priceInput.value = "";
+                    }
+                    priceInput.required = true;
+                }
+                if (amountLabel) amountLabel.textContent = "Jumlah Aset";
+                if (technicalIndicators) technicalIndicators.style.display = "block";
+            }
+        }
+
+        if (typeSelect) {
+            typeSelect.addEventListener("change", adjustFormForType);
+        }
+        
+        adjustFormForType();
+
         if (btnFetch) {
             btnFetch.addEventListener("click", function() {
                 const symbol = symbolInput.value.trim().toUpperCase();
@@ -365,6 +408,7 @@
                 // Pre-fill inputs
                 symbolInput.value = symbol;
                 document.getElementById("trade_type").value = type;
+                adjustFormForType(); // Adjust labels and visibilities for the selected type
                 priceInput.value = price;
                 document.getElementById("trade_amount").value = amount;
                 timeInput.value = time;
@@ -372,23 +416,24 @@
                 dInput.value = stochD;
                 divSelect.value = divergence;
                 document.getElementById("notes").value = notes;
-
+ 
                 // Show cancel button
                 btnSubmit.textContent = "Simpan Perubahan";
                 btnCancel.style.display = "block";
-
+ 
                 // Scroll to form smoothly
                 form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
         });
-
+ 
         btnCancel.addEventListener("click", function() {
             // Reset form
             formTitle.textContent = "Catat Transaksi Baru";
             form.action = defaultAction;
             methodContainer.innerHTML = '';
             form.reset();
-
+            adjustFormForType(); // Reset form field states and labels
+ 
             // Re-set default time to now
             const now = new Date();
             const year = now.getFullYear();
@@ -397,7 +442,7 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             timeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-
+ 
             // Hide cancel button
             btnSubmit.textContent = "Simpan Transaksi";
             btnCancel.style.display = "none";
