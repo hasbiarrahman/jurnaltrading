@@ -86,4 +86,24 @@ class ScannerController extends Controller
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
     }
+
+    /**
+     * API Endpoint to analyse a symbol's swing setup (support/resistance and Risk-to-Reward ratio).
+     */
+    public function analyseSymbol($symbol, \App\Services\TechnicalAnalysisService $service)
+    {
+        $analysis = $service->calculateSwingSetup($symbol);
+        
+        if (!$analysis) {
+            return response()->json([
+                'success' => false,
+                'message' => "Gagal menghitung analisis swing untuk {$symbol}."
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'analysis' => $analysis
+        ]);
+    }
 }

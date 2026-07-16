@@ -98,12 +98,108 @@
                 <tr>
                     <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
                         Memuat data 500 altcoin...
-                    </td>
-                </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Modal Analisis Swing -->
+<div id="modal-analisa" style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(12px); background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1.5rem; transition: all 0.3s ease;">
+    <div class="glass-card" style="width: 100%; max-width: 520px; border: 1px solid rgba(255,255,255,0.1); background: rgba(13, 14, 38, 0.85); box-shadow: 0 24px 64px rgba(0,0,0,0.8); position: relative; animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 1.5rem;">
+        <!-- Close Button -->
+        <button onclick="closeAnalysisModal()" style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
+        <!-- Modal Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <h2 id="analisa-symbol" style="font-size: 1.5rem; font-weight: 800; color: white; margin-bottom: 0.25rem; display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0;">
+                --
+            </h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Hasil Analisis Kalkulasi Swing Trade (Struktur Harian)</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="analisa-loading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 0;">
+            <svg class="animate-spin" style="width: 32px; height: 32px; color: var(--color-primary); margin-bottom: 1rem;" fill="none" viewBox="0 0 24 24">
+                <circle style="opacity: 0.25; stroke: currentColor; stroke-width: 4;" cx="12" cy="12" r="10"></circle>
+                <path style="opacity: 0.75; fill: currentColor;" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Mengekstrak klines & menghitung Pivot...</span>
+        </div>
+
+        <!-- Content State -->
+        <div id="analisa-content" style="display: none;">
+            <!-- Price and Score Row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; text-transform: uppercase; font-weight: 600;">Harga Aktual</span>
+                    <span id="analisa-price" style="font-size: 1.35rem; font-weight: 800; font-family: monospace; color: white;">$0.0000</span>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; text-transform: uppercase; font-weight: 600;">Kualitas Setup</span>
+                    <span id="analisa-score" style="font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.15rem;">--</span>
+                </div>
+            </div>
+
+            <!-- Risk Reward Card -->
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center;">
+                <span style="font-size: 0.75rem; color: #93c5fd; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Rasio Risk-to-Reward (R2 Target)</span>
+                <div style="font-size: 2.25rem; font-weight: 900; color: white; font-family: monospace; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span>1 :</span>
+                    <span id="analisa-ratio" style="color: #60a5fa;">0.00</span>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; font-size: 0.8rem; font-family: monospace; border-top: 1px solid rgba(59,130,246,0.15); padding-top: 0.75rem;">
+                    <span style="color: #fca5a5;">Risiko: -<span id="analisa-pct-risk">0.0</span>%</span>
+                    <span style="color: #86efac;">Potensi: +<span id="analisa-pct-reward">0.0</span>%</span>
+                </div>
+            </div>
+
+            <!-- Levels List -->
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 0.5px; margin-top: 0;">Level Pivot Teknikal (1D)</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: rgba(239, 68, 68, 0.05); border-left: 3px solid #ef4444; border-radius: 4px;">
+                        <span style="font-size: 0.85rem; color: #fca5a5; font-weight: 600;">Resisten 3 (R3 - Max Target)</span>
+                        <span id="analisa-r3" style="font-family: monospace; font-weight: 700; color: white;">$0.0000</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: rgba(59, 130, 246, 0.05); border-left: 3px solid #3b82f6; border-radius: 4px;">
+                        <span style="font-size: 0.85rem; color: #93c5fd; font-weight: 600;">Resisten 2 (R2 - Swing Target)</span>
+                        <span id="analisa-r2" style="font-family: monospace; font-weight: 700; color: white;">$0.0000</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: rgba(255, 255, 255, 0.02); border-left: 3px solid #94a3b8; border-radius: 4px;">
+                        <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Resisten 1 (R1 - Minor Target)</span>
+                        <span id="analisa-r1" style="font-family: monospace; font-weight: 700; color: white;">$0.0000</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: rgba(16, 185, 129, 0.05); border-left: 3px solid #10b981; border-radius: 4px;">
+                        <span style="font-size: 0.85rem; color: #a7f3d0; font-weight: 600;">Support 1 (S1 - Batas Stop Loss)</span>
+                        <span id="analisa-s1" style="font-family: monospace; font-weight: 700; color: white;">$0.0000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendation Card -->
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Saran Tindakan:</span>
+                <p id="analisa-advice" style="font-size: 0.85rem; color: #e2e8f0; line-height: 1.45; margin: 0;">--</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes modalSlideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
 
 <script>
     let scannerItems = [];
@@ -255,6 +351,7 @@
                         <td style="text-align: center;">${statusBadge}</td>
                         <td style="text-align: center;">
                             <a href="/trade?symbol=${item.symbol}" class="badge badge-success" style="text-decoration: none; display: inline-block; padding: 0.35rem 0.65rem;">Jurnal Trade</a>
+                            ${currentFilter === 'double_bottom' ? `<button onclick="startAnalysis('${item.symbol}')" class="badge badge-primary" style="margin-left: 0.5rem; border: none; cursor: pointer; display: inline-block; padding: 0.35rem 0.65rem; font-family: inherit; font-weight: 600; line-height: normal; vertical-align: middle;">Mulai Analisa</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -367,5 +464,78 @@
 
     // Initial load
     loadScannerAllResults();
+
+    // Modal Analysis Logic
+    const modalAnalisa = document.getElementById('modal-analisa');
+    const loadingState = document.getElementById('analisa-loading');
+    const contentState = document.getElementById('analisa-content');
+    
+    window.startAnalysis = function(symbol) {
+        // Show modal and loading state
+        modalAnalisa.style.display = 'flex';
+        loadingState.style.display = 'flex';
+        contentState.style.display = 'none';
+        
+        document.getElementById('analisa-symbol').textContent = symbol;
+        
+        // Fetch data
+        fetch(`/api/scanner/analyse/${symbol}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const analysis = data.analysis;
+                    
+                    // Format values
+                    document.getElementById('analisa-price').textContent = `$${parseFloat(analysis.current_price).toFixed(4)}`;
+                    
+                    const scoreEl = document.getElementById('analisa-score');
+                    scoreEl.textContent = analysis.score;
+                    scoreEl.className = analysis.score_class; // text-success, text-warning, text-danger
+                    
+                    // Apply inline styling class for color safety
+                    if (analysis.score_class === 'text-success') {
+                        scoreEl.style.color = '#00e676';
+                    } else if (analysis.score_class === 'text-warning') {
+                        scoreEl.style.color = '#ffb300';
+                    } else {
+                        scoreEl.style.color = '#ff1744';
+                    }
+                    
+                    document.getElementById('analisa-ratio').textContent = parseFloat(analysis.ratio).toFixed(2);
+                    document.getElementById('analisa-pct-risk').textContent = parseFloat(analysis.pct_risk).toFixed(1);
+                    document.getElementById('analisa-pct-reward').textContent = parseFloat(analysis.pct_reward).toFixed(1);
+                    
+                    document.getElementById('analisa-s1').textContent = `$${parseFloat(analysis.s1).toFixed(4)}`;
+                    document.getElementById('analisa-r1').textContent = `$${parseFloat(analysis.r1).toFixed(4)}`;
+                    document.getElementById('analisa-r2').textContent = `$${parseFloat(analysis.r2).toFixed(4)}`;
+                    document.getElementById('analisa-r3').textContent = `$${parseFloat(analysis.r3).toFixed(4)}`;
+                    
+                    document.getElementById('analisa-advice').textContent = analysis.advice;
+                    
+                    // Toggle visibility
+                    loadingState.style.display = 'none';
+                    contentState.style.display = 'block';
+                } else {
+                    alert(data.message || 'Gagal menghitung analisa.');
+                    closeAnalysisModal();
+                }
+            })
+            .catch(err => {
+                console.error("Analysis failed", err);
+                alert("Terjadi kesalahan saat memproses data analisis.");
+                closeAnalysisModal();
+            });
+    }
+    
+    window.closeAnalysisModal = function() {
+        modalAnalisa.style.display = 'none';
+    }
+    
+    // Close modal when clicking outside the card
+    modalAnalisa.addEventListener('click', function(e) {
+        if (e.target === modalAnalisa) {
+            closeAnalysisModal();
+        }
+    });
 </script>
 @endsection

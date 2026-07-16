@@ -271,4 +271,172 @@ class TechnicalAnalysisService
 
         return $chartData;
     }
+
+    /**
+     * Calculate supports, resistances, and Risk-to-Reward ratio for swing trading analysis.
+     *
+     * @param string $symbol
+     * @return array|null
+     */
+    public function calculateSwingSetup(string $symbol)
+    {
+        try {
+            $symbol = strtoupper(trim($symbol));
+            
+            // Fetch daily klines (using Tokocrypto site MBX engine)
+            $response = Http::timeout(3)->get("https://www.tokocrypto.site/api/v3/klines", [
+                'symbol' => $symbol,
+                'interval' => '1d',
+                'limit' => 60 // 2 months of history is plenty to identify local peaks
+            ]);
+
+            if (!$response->successful()) {
+                $response = Http::timeout(3)->get("https://api.binance.com/api/v3/klines", [
+                    'symbol' => $symbol,
+                    'interval' => '1d',
+                    'limit' => 60
+                ]);
+            }
+
+            if (!$response->successful()) {
+                return null;
+            }
+
+            $klines = $response->json();
+            if (count($klines) < 15) {
+                return null;
+            }
+
+            $closes = [];
+            $highs = [];
+            $lows = [];
+            
+            foreach ($klines as $k) {
+                $closes[] = (float)$k[4];
+                $highs[] = (float)$k[2];
+                $lows[] = (float)$k[3];
+            }
+
+            $currentPrice = end($closes);
+            $len = count($closes);
+            
+            $peaks = [];
+            $troughs = [];
+
+            // Detect local peaks/troughs using a 2-candle window on each side
+            for ($i = 2; $i < $len - 2; $i++) {
+                // Peak (Resistance)
+                if ($highs[$i] >= $highs[$i-1] && 
+                    $highs[$i] >= $highs[$i-2] && 
+                    $highs[$i] >= $highs[$i+1] && 
+                    $highs[$i] >= $highs[$i+2]) {
+                    $peaks[] = $highs[$i];
+                }
+                
+                // Trough (Support)
+                if ($lows[$i] <= $lows[$i-1] && 
+                    $lows[$i] <= $lows[$i-2] && 
+                    $lows[$i] <= $lows[$i+1] && 
+                    $lows[$i] <= $lows[$i+2]) {
+                    $troughs[] = $lows[$i];
+                }
+            }
+
+            // Also consider the absolute lowest/highest close prices as candidates
+            $troughs[] = min($lows);
+            $peaks[] = max($highs);
+
+            // Filter supports (troughs below current price)
+            $supports = array_filter($troughs, function($val) use ($currentPrice) {
+                return $val < $currentPrice;
+            });
+            rsort($supports); // Closest support first
+
+            // Filter resistances (peaks above current price)
+            $resistances = array_filter($peaks, function($val) use ($currentPrice) {
+                return $val > $currentPrice;
+            });
+            sort($resistances); // Closest resistance first
+
+            // Clean duplicate support levels (within 1.5% margin)
+            $cleanSupports = [];
+            foreach ($supports as $s) {
+                $tooClose = false;
+                foreach ($cleanSupports as $cs) {
+                    if (abs($s - $cs) / $cs < 0.015) {
+                        $tooClose = true;
+                        break;
+                    }
+                }
+                if (!$tooClose) {
+                    $cleanSupports[] = $s;
+                }
+            }
+
+            // Clean duplicate resistance levels (within 1.5% margin)
+            $cleanResistances = [];
+            foreach ($resistances as $r) {
+                $tooClose = false;
+                foreach ($cleanResistances as $cr) {
+                    if (abs($r - $cr) / $cr < 0.015) {
+                        $tooClose = true;
+                        break;
+                    }
+                }
+                if (!$tooClose) {
+                    $cleanResistances[] = $r;
+                }
+            }
+
+            // Apply sensible fallbacks if we don't have enough levels
+            $s1 = count($cleanSupports) > 0 ? $cleanSupports[0] : $currentPrice * 0.95;
+            
+            $r1 = count($cleanResistances) > 0 ? $cleanResistances[0] : $currentPrice * 1.05;
+            $r2 = count($cleanResistances) > 1 ? $cleanResistances[1] : $r1 * 1.05;
+            $r3 = count($cleanResistances) > 2 ? $cleanResistances[2] : $r2 * 1.05;
+
+            // Calculations
+            $risk = $currentPrice - $s1;
+            $reward = $r2 - $currentPrice; // Use R2 (Major Swing target) for Risk-to-Reward calculation
+            $ratio = $risk > 0 ? ($reward / $risk) : 0;
+
+            $pctRisk = ($risk / $currentPrice) * 100;
+            $pctReward = ($reward / $currentPrice) * 100;
+
+            // Score and advice
+            if ($ratio >= 2.0 && $pctRisk <= 8.5) {
+                $score = 'Sangat Bagus (Excellent)';
+                $scoreClass = 'text-success';
+                $advice = 'Setup ideal! Rasio keuntungan sangat besar dengan risiko penempatan stop-loss yang ketat. Direkomendasikan untuk cicil beli (buy on weakness) mendekati support.';
+            } elseif ($ratio >= 1.0) {
+                $score = 'Moderat (Moderate)';
+                $scoreClass = 'text-warning';
+                $advice = 'Setup lumayan sehat. Disarankan untuk menunggu harga terkoreksi sedikit lebih dekat ke support untuk memaksimalkan rasio risk-to-reward sebelum entri.';
+            } else {
+                $score = 'Kurang Menarik (Poor)';
+                $scoreClass = 'text-danger';
+                $advice = 'Rasio Risk-to-Reward kurang menguntungkan saat ini (potensi kerugian mendekati atau lebih besar dari keuntungan). Disarankan untuk mencari peluang di koin lain.';
+            }
+
+            return [
+                'symbol' => $symbol,
+                'current_price' => $currentPrice,
+                's1' => $s1,
+                'r1' => $r1,
+                'r2' => $r2,
+                'r3' => $r3,
+                'risk' => $risk,
+                'reward' => $reward,
+                'pct_risk' => $pctRisk,
+                'pct_reward' => $pctReward,
+                'ratio' => $ratio,
+                'score' => $score,
+                'score_class' => $scoreClass,
+                'advice' => $advice
+            ];
+
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 }
