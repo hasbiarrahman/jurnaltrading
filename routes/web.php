@@ -57,6 +57,9 @@ Route::middleware(['auth'])->group(function () {
         // Realized PNL Route
         Route::get('/pnl', [PortfolioController::class, 'pnl'])->name('portfolio.pnl');
 
+        // Open Orders Route
+        Route::get('/open-orders', [PortfolioController::class, 'openOrders'])->name('portfolio.open-orders');
+
         // User Management Routes
         Route::get('/user', [UserController::class, 'index'])->name('user.index');
         Route::post('/user', [UserController::class, 'store'])->name('user.store');

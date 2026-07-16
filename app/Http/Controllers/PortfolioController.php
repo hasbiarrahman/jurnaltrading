@@ -291,4 +291,53 @@ class PortfolioController extends Controller
             'end_date' => $endDate
         ]);
     }
+
+    /**
+     * Display open orders page.
+     */
+    public function openOrders(Request $request)
+    {
+        $hasCredentials = $this->tokocryptoService->hasCredentials();
+        $openOrders = [];
+        $prices = [];
+        $usdtIdr = 16000.0;
+
+        if ($hasCredentials) {
+            $openOrders = $this->tokocryptoService->getOpenOrders();
+            $prices = $this->tokocryptoService->getAllPrices();
+            $portfolio = $this->tokocryptoService->getPortfolio();
+            $usdtIdr = $portfolio['usdt_idr_rate'] ?? 16000.0;
+
+            // Enforce sorting by order time descending (newest first)
+            usort($openOrders, function ($a, $b) {
+                return $b['time'] <=> $a['time'];
+            });
+
+            // Map and calculate distance % to current price for limit orders
+            foreach ($openOrders as &$order) {
+                $symbol = $order['symbol'];
+                $currentPrice = $prices[$symbol] ?? 0.0;
+                $orderPrice = (float)$order['price'];
+                
+                $order['current_price'] = $currentPrice;
+                $order['price'] = $orderPrice;
+                $order['origQty'] = (float)$order['origQty'];
+                $order['executedQty'] = (float)$order['executedQty'];
+                $order['total_usdt'] = $orderPrice * $order['origQty'];
+                
+                // Calculate distance percentage to fill
+                if ($currentPrice > 0) {
+                    $order['distance_percent'] = (($orderPrice - $currentPrice) / $currentPrice) * 100.0;
+                } else {
+                    $order['distance_percent'] = null;
+                }
+            }
+        }
+
+        return view('portfolio.open_orders', [
+            'has_credentials' => $hasCredentials,
+            'open_orders' => $openOrders,
+            'usdt_idr_rate' => $usdtIdr
+        ]);
+    }
 }

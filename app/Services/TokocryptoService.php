@@ -253,4 +253,43 @@ class TokocryptoService
             'is_live' => $fetchedFromApi
         ];
     }
+
+    /**
+     * Fetch user open orders from Tokocrypto.
+     */
+    public function getOpenOrders(): array
+    {
+        $apiKey = $this->getApiKey();
+        $secretKey = $this->getApiSecret();
+
+        if (!$this->hasCredentials()) {
+            return [];
+        }
+
+        try {
+            $params = [
+                'timestamp' => round(microtime(true) * 1000),
+                'recvWindow' => 60000,
+            ];
+
+            $queryString = http_build_query($params);
+            $signature = hash_hmac('sha256', $queryString, $secretKey);
+
+            $response = Http::timeout(5)
+                ->withHeaders([
+                    'X-MBX-APIKEY' => $apiKey,
+                ])
+                ->get($this->baseUrl . '/api/v3/openOrders?' . $queryString . '&signature=' . $signature);
+
+            if ($response->successful()) {
+                return $response->json();
+            } else {
+                \Log::warning("Failed to fetch open orders: " . $response->body());
+            }
+        } catch (\Exception $e) {
+            \Log::error("Tokocrypto API error in getOpenOrders: " . $e->getMessage());
+        }
+
+        return [];
+    }
 }
