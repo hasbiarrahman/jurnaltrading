@@ -167,7 +167,8 @@ class ScanAltcoins extends Command
                         
                         if (!is_null($lastRsi) && !is_null($lastK) && !is_nan($lastRsi) && !is_nan($lastK)) {
                             $isJournal = $pair['is_journal'];
-                            $isDoubleBottom = $this->detectDoubleBottom($closes);
+                            $hasDoubleBottomPattern = $this->detectDoubleBottom($closes);
+                            $isDoubleBottom = $hasDoubleBottomPattern && ($lastK >= 32.0 && $lastK <= 55.0);
                             $meetsFilter = ($lastRsi < 40 && $lastK < 7) || $isDoubleBottom;
                             
                             $coinData = [
