@@ -148,30 +148,47 @@ class TokocryptoService
             $holdings = [];
 
             foreach ($trades as $trade) {
-                $symbol = $trade->symbol;
-                
-                // Identify the main crypto asset (e.g. BTC from BTCUSDT)
-                $asset = $symbol;
-                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB', 'IDR'] as $q) {
-                    if (str_ends_with($symbol, $q) && strlen($symbol) > strlen($q)) {
-                        $asset = substr($symbol, 0, -strlen($q));
-                        break;
-                    }
+                $symbol = strtoupper(trim($trade->symbol));
+                $type = strtoupper(trim($trade->type));
+                $amount = (float)$trade->amount;
+                $price = (float)$trade->price;
+                $total = (float)$trade->total;
+                if ($total <= 0) {
+                    $total = $price * $amount;
                 }
 
-                if (!isset($holdings[$asset])) {
-                    $holdings[$asset] = 0.0;
-                }
-
-                if (strtoupper($trade->type) === 'BUY') {
-                    $holdings[$asset] += (float)$trade->amount;
+                if ($type === 'DEPOSIT') {
+                    $holdings[$symbol] = ($holdings[$symbol] ?? 0.0) + $amount;
+                } elseif ($type === 'WITHDRAW') {
+                    $holdings[$symbol] = ($holdings[$symbol] ?? 0.0) - $amount;
                 } else {
-                    $holdings[$asset] -= (float)$trade->amount;
+                    // Identify the main crypto asset (e.g. BTC from BTCUSDT)
+                    $asset = $symbol;
+                    $quote = null;
+                    foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'USDC', 'BTC', 'ETH', 'BNB', 'IDR'] as $q) {
+                        if (str_ends_with($symbol, $q) && strlen($symbol) > strlen($q)) {
+                            $asset = substr($symbol, 0, -strlen($q));
+                            $quote = $q;
+                            break;
+                        }
+                    }
+
+                    if ($type === 'BUY') {
+                        $holdings[$asset] = ($holdings[$asset] ?? 0.0) + $amount;
+                        if ($quote) {
+                            $holdings[$quote] = ($holdings[$quote] ?? 0.0) - $total;
+                        }
+                    } elseif ($type === 'SELL') {
+                        $holdings[$asset] = ($holdings[$asset] ?? 0.0) - $amount;
+                        if ($quote) {
+                            $holdings[$quote] = ($holdings[$quote] ?? 0.0) + $total;
+                        }
+                    }
                 }
             }
 
             foreach ($holdings as $asset => $amount) {
-                if ($amount > 0.00001) {
+                if (abs($amount) > 0.00001) {
                     $balances[$asset] = [
                         'asset' => $asset,
                         'free' => $amount,

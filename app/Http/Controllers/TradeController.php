@@ -57,7 +57,7 @@ class TradeController extends Controller
     {
         $request->validate([
             'symbol' => 'required|string|max:20',
-            'type' => 'required|in:BUY,SELL',
+            'type' => 'required|in:BUY,SELL,DEPOSIT,WITHDRAW',
             'price' => 'required|numeric|min:0.00000001',
             'amount' => 'required|numeric|min:0.00000001',
             'trade_time' => 'required|date',
@@ -163,7 +163,7 @@ class TradeController extends Controller
     {
         $request->validate([
             'symbol' => 'required|string|max:20',
-            'type' => 'required|in:BUY,SELL',
+            'type' => 'required|in:BUY,SELL,DEPOSIT,WITHDRAW',
             'price' => 'required|numeric|min:0.00000001',
             'amount' => 'required|numeric|min:0.00000001',
             'trade_time' => 'required|date',

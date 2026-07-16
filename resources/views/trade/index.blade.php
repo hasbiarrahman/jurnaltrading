@@ -40,6 +40,8 @@
                 <select name="type" id="trade_type" class="form-control" required>
                     <option value="BUY">BUY</option>
                     <option value="SELL">SELL</option>
+                    <option value="DEPOSIT">DEPOSIT (Setor Kas)</option>
+                    <option value="WITHDRAW">WITHDRAW (Tarik Kas)</option>
                 </select>
             </div>
 
@@ -115,9 +117,11 @@
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="filter_type" class="form-label" style="margin-bottom: 0.25rem;">Tipe</label>
                     <select name="type" id="filter_type" class="form-control" style="padding: 0.6rem;">
-                        <option value="">Semua</option>
+                        <option value="">Semua Tipe</option>
                         <option value="BUY" {{ request('type') === 'BUY' ? 'selected' : '' }}>BUY</option>
                         <option value="SELL" {{ request('type') === 'SELL' ? 'selected' : '' }}>SELL</option>
+                        <option value="DEPOSIT" {{ request('type') === 'DEPOSIT' ? 'selected' : '' }}>DEPOSIT</option>
+                        <option value="WITHDRAW" {{ request('type') === 'WITHDRAW' ? 'selected' : '' }}>WITHDRAW</option>
                     </select>
                 </div>
 
@@ -170,9 +174,15 @@
                                 </td>
                                 <td style="font-weight: 700;">{{ $trade->symbol }}</td>
                                 <td>
-                                    <span class="badge {{ $trade->type === 'BUY' ? 'badge-success' : 'badge-danger' }}">
-                                        {{ $trade->type }}
-                                    </span>
+                                    @if($trade->type === 'BUY')
+                                        <span class="badge badge-success">BUY</span>
+                                    @elseif($trade->type === 'SELL')
+                                        <span class="badge badge-danger">SELL</span>
+                                    @elseif($trade->type === 'DEPOSIT')
+                                        <span class="badge" style="background-color: #3b82f6; color: white;">DEPOSIT</span>
+                                    @elseif($trade->type === 'WITHDRAW')
+                                        <span class="badge" style="background-color: #f97316; color: white;">WITHDRAW</span>
+                                    @endif
                                 </td>
                                  <td style="font-family: monospace;">{{ $trade->formatted_price }}</td>
                                  <td style="font-family: monospace;">{{ number_format($trade->amount, 4) }}</td>
