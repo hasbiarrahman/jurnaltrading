@@ -185,12 +185,13 @@ class PortfolioController extends Controller
 
             $totalAssetSold = 0.0;
             $totalAssetPnlUsdt = 0.0;
-
+            $totalAssetCostUsdt = 0.0;
+ 
             foreach ($assetTrades as $trade) {
                 $amount = (float)$trade->amount;
                 $price = (float)$trade->price;
                 $quote = $trade->quote_asset;
-
+ 
                 // Standardize trade price to USDT
                 $priceInUsdt = $price;
                 if ($quote === 'BIDR' || $quote === 'IDRT' || $quote === 'IDR') {
@@ -199,9 +200,9 @@ class PortfolioController extends Controller
                         $priceInUsdt = $price / $rate;
                     }
                 }
-
+ 
                 $type = strtoupper(trim($trade->type));
-
+ 
                 if ($type === 'BUY') {
                     $runningAmount += $amount;
                     $runningCostUsdt += ($priceInUsdt * $amount);
@@ -210,7 +211,8 @@ class PortfolioController extends Controller
                     
                     // Realized PNL for this sell
                     $pnlUsdt = ($priceInUsdt - $avgBuyPriceUsdt) * $amount;
-
+                    $costUsdt = $avgBuyPriceUsdt * $amount;
+ 
                     // Apply date filter
                     $tradeTime = date('Y-m-d', strtotime($trade->trade_time));
                     $isInRange = true;
@@ -220,8 +222,9 @@ class PortfolioController extends Controller
                     if ($endDate && $tradeTime > $endDate) {
                         $isInRange = false;
                     }
-
+ 
                     if ($isInRange) {
+                        $pnlPercent = $avgBuyPriceUsdt > 0 ? (($priceInUsdt - $avgBuyPriceUsdt) / $avgBuyPriceUsdt) * 100 : 0.0;
                         $allRealizedPnl[] = [
                             'id' => $trade->id,
                             'asset' => $asset,
@@ -230,26 +233,29 @@ class PortfolioController extends Controller
                             'sell_price_usdt' => $priceInUsdt,
                             'avg_buy_price_usdt' => $avgBuyPriceUsdt,
                             'pnl_usdt' => $pnlUsdt,
+                            'pnl_percent' => $pnlPercent,
                             'trade_time' => $trade->trade_time,
                             'notes' => $trade->notes
                         ];
-
+ 
                         $totalAssetSold += $amount;
                         $totalAssetPnlUsdt += $pnlUsdt;
+                        $totalAssetCostUsdt += $costUsdt;
                     }
-
+ 
                     // Adjust holdings after sell
                     $runningAmount = max(0.0, $runningAmount - $amount);
                     $runningCostUsdt = $runningAmount * $avgBuyPriceUsdt;
                 }
             }
-
+ 
             if ($totalAssetSold > 0) {
                 $assetSummaries[$asset] = [
                     'asset' => $asset,
                     'total_sold' => $totalAssetSold,
                     'pnl_usdt' => $totalAssetPnlUsdt,
-                    'pnl_idr' => $totalAssetPnlUsdt * $usdtIdr
+                    'pnl_idr' => $totalAssetPnlUsdt * $usdtIdr,
+                    'pnl_percent' => $totalAssetCostUsdt > 0 ? ($totalAssetPnlUsdt / $totalAssetCostUsdt) * 100 : 0.0
                 ];
             }
         }

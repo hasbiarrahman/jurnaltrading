@@ -80,6 +80,7 @@
                     <th style="text-align: right;">Total Koin Terjual</th>
                     <th style="text-align: right;">Total PNL (USD)</th>
                     <th style="text-align: right;">Total PNL (Rupiah)</th>
+                    <th style="text-align: center;">Persentase PNL</th>
                 </tr>
             </thead>
             <tbody>
@@ -93,10 +94,15 @@
                         <td style="text-align: right; font-family: monospace; font-weight: 700;" class="{{ $summary['pnl_usdt'] >= 0 ? 'text-success' : 'text-danger' }}">
                             {{ $summary['pnl_usdt'] >= 0 ? '+' : '' }}Rp {{ number_format($summary['pnl_idr'], 0, ',', '.') }}
                         </td>
+                        <td style="text-align: center;">
+                            <span class="badge {{ $summary['pnl_percent'] >= 0 ? 'badge-success' : 'badge-danger' }}" style="font-family: monospace; font-weight: 700;">
+                                {{ $summary['pnl_percent'] >= 0 ? '+' : '' }}{{ number_format($summary['pnl_percent'], 2) }}%
+                            </span>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
                             Tidak ada data ringkasan aset untuk periode ini.
                         </td>
                     </tr>
@@ -121,6 +127,7 @@
                     <th style="text-align: right;">Harga Rata-rata Beli (Avg Buy)</th>
                     <th style="text-align: right;">Harga Jual</th>
                     <th style="text-align: right;">Realisasi Profit / Loss</th>
+                    <th style="text-align: center;">PNL (%)</th>
                     <th>Catatan</th>
                 </tr>
             </thead>
@@ -144,13 +151,18 @@
                                 {{ $record['pnl_usdt'] >= 0 ? '+' : '' }}Rp {{ number_format($record['pnl_usdt'] * $usdt_idr_rate, 0, ',', '.') }}
                             </div>
                         </td>
+                        <td style="text-align: center;">
+                            <span class="badge {{ $record['pnl_percent'] >= 0 ? 'badge-success' : 'badge-danger' }}" style="font-family: monospace; font-weight: 700;">
+                                {{ $record['pnl_percent'] >= 0 ? '+' : '' }}{{ number_format($record['pnl_percent'], 2) }}%
+                            </span>
+                        </td>
                         <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $record['notes'] }}">
                             {{ $record['notes'] ?? '-' }}
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
                             Belum ada riwayat transaksi penjualan (SELL) terdaftar di database.
                         </td>
                     </tr>
