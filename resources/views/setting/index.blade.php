@@ -16,6 +16,12 @@
     </div>
 @endif
 
+@if(session('error'))
+    <div class="alert alert-danger mb-4">
+        {{ session('error') }}
+    </div>
+@endif
+
 @if($errors->any())
     <div class="alert alert-danger mb-4">
         {{ $errors->first() }}
@@ -71,6 +77,128 @@
                 <strong style="color: var(--color-primary); display: block; margin-bottom: 0.25rem;">Informasi Fallback</strong>
                 Jika API Secret dikosongkan, sistem tetap berfungsi normal dengan memperhitungkan saldo portofolio dan average buy price secara kalkulatif dari riwayat transaksi yang Anda catat pada menu <strong>Jurnal Transaksi</strong>.
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Telegram Integration Row -->
+<div class="dashboard-row" style="grid-template-columns: 1fr 1.5fr; gap: 1.5rem; margin-top: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Left Column: Telegram Config -->
+    <div class="glass-card" style="height: fit-content;">
+        <div class="card-title" style="color: var(--color-secondary);">Integrasi Bot Telegram</div>
+        
+        <form action="{{ route('setting.telegram.update') }}" method="POST">
+            @csrf
+            
+            <div class="form-group">
+                <label for="telegram_alert_enabled" class="form-label">Notifikasi Harga</label>
+                <select name="telegram_alert_enabled" id="telegram_alert_enabled" class="form-control">
+                    <option value="1" {{ $telegramAlertEnabled === '1' ? 'selected' : '' }}>Aktif (Kirim Alert)</option>
+                    <option value="0" {{ $telegramAlertEnabled === '0' ? 'selected' : '' }}>Nonaktif</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="telegram_bot_token" class="form-label">Telegram Bot Token</label>
+                <input type="text" name="telegram_bot_token" id="telegram_bot_token" class="form-control" placeholder="Masukkan Bot Token Anda" value="{{ old('telegram_bot_token', $telegramBotToken) }}">
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                    Dapatkan dari Telegram BotFather (e.g. `123456:ABC-DEF...`)
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="telegram_alert_threshold" class="form-label">Ambang Batas Kenaikan/Penurunan (%)</label>
+                <input type="number" step="0.01" name="telegram_alert_threshold" id="telegram_alert_threshold" class="form-control" placeholder="Default: 2.00" value="{{ old('telegram_alert_threshold', $telegramAlertThreshold) }}">
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                    Peringatan dikirim jika harga aset bergerak melampaui batas persentase ini.
+                </small>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%; padding: 0.8rem;">
+                Simpan Setelan Telegram
+            </button>
+        </form>
+    </div>
+
+    <!-- Right Column: Recipients Management -->
+    <div class="glass-card">
+        <div class="card-title" style="color: var(--color-primary);">Daftar Penerima Notifikasi</div>
+        
+        <!-- Add Recipient Form -->
+        <form action="{{ route('setting.telegram.recipient.store') }}" method="POST" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            @csrf
+            <div style="font-weight: 600; color: white; margin-bottom: 1rem; font-size: 0.95rem;">Tambah Penerima Baru</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: flex-end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="name" class="form-label" style="font-size: 0.8rem; margin-bottom: 0.25rem;">Nama Pengenal</label>
+                    <input type="text" name="name" id="name" class="form-control" placeholder="Nama / Nomor HP" required style="padding: 0.5rem 0.75rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="chat_id" class="form-label" style="font-size: 0.8rem; margin-bottom: 0.25rem;">Telegram Chat ID</label>
+                    <input type="text" name="chat_id" id="chat_id" class="form-control" placeholder="Contoh: 184739210" required style="padding: 0.5rem 0.75rem;">
+                </div>
+                <button type="submit" class="btn btn-secondary" style="padding: 0.65rem 1.5rem; height: fit-content; font-size: 0.88rem;">
+                    Daftarkan
+                </button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4;">
+                *Dapatkan Chat ID Anda secara gratis dengan mengirim pesan ke Bot Telegram <strong>@userinfobot</strong> atau <strong>@GetChatID_Bot</strong>.
+            </div>
+        </form>
+
+        <!-- Recipients Table -->
+        <div class="table-responsive">
+            <table class="custom-table" style="font-size: 0.85rem; width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Nama Pengenal</th>
+                        <th>Chat ID</th>
+                        <th style="text-align: center;">Status</th>
+                        <th style="text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($telegramRecipients as $recipient)
+                        <tr>
+                            <td style="font-weight: 600; color: white;">{{ $recipient->name }}</td>
+                            <td style="font-family: monospace;">{{ $recipient->chat_id }}</td>
+                            <td style="text-align: center;">
+                                <form action="{{ route('setting.telegram.recipient.toggle', $recipient->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    @if($recipient->is_active)
+                                        <button type="submit" class="badge badge-success" style="border: none; cursor: pointer; padding: 0.25rem 0.5rem;">Aktif</button>
+                                    @else
+                                        <button type="submit" class="badge" style="border: none; cursor: pointer; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.05); color: var(--text-muted);">Nonaktif</button>
+                                    @endif
+                                </form>
+                            </td>
+                            <td style="text-align: center; display: flex; justify-content: center; gap: 0.5rem;">
+                                <!-- Test Connection -->
+                                <form action="{{ route('setting.telegram.recipient.test', $recipient->id) }}" method="POST" style="display: inline;">
+                                    @csrf
+                                    <button type="submit" class="badge badge-primary" style="border: none; cursor: pointer; padding: 0.25rem 0.5rem;">
+                                        Test Kirim
+                                    </button>
+                                </form>
+                                <!-- Delete Recipient -->
+                                <form action="{{ route('setting.telegram.recipient.destroy', $recipient->id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus penerima ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="badge badge-danger" style="border: none; cursor: pointer; padding: 0.25rem 0.5rem;">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
+                                Belum ada penerima notifikasi Telegram yang didaftarkan.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

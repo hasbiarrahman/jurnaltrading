@@ -72,6 +72,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/setting/database/export', [SettingController::class, 'exportDatabase'])->name('setting.database.export');
         Route::post('/setting/database/import', [SettingController::class, 'importDatabase'])->name('setting.database.import');
 
+        // Telegram Settings Routes
+        Route::post('/setting/telegram', [SettingController::class, 'updateTelegram'])->name('setting.telegram.update');
+        Route::post('/setting/telegram/recipient', [SettingController::class, 'storeTelegramRecipient'])->name('setting.telegram.recipient.store');
+        Route::post('/setting/telegram/recipient/{id}/toggle', [SettingController::class, 'toggleTelegramRecipient'])->name('setting.telegram.recipient.toggle');
+        Route::post('/setting/telegram/recipient/{id}/test', [SettingController::class, 'testTelegramRecipient'])->name('setting.telegram.recipient.test');
+        Route::delete('/setting/telegram/recipient/{id}', [SettingController::class, 'destroyTelegramRecipient'])->name('setting.telegram.recipient.destroy');
+
         // Scanner Routes
         Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');
 

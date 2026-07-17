@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\TelegramRecipient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class SettingController extends Controller
 {
@@ -17,7 +19,19 @@ class SettingController extends Controller
         $apiKey = Setting::where('key', 'tokocrypto_api_key')->value('value') ?? '';
         $apiSecret = Setting::where('key', 'tokocrypto_api_secret')->value('value') ?? '';
 
-        return view('setting.index', compact('apiKey', 'apiSecret'));
+        $telegramBotToken = Setting::where('key', 'telegram_bot_token')->value('value') ?? '';
+        $telegramAlertThreshold = Setting::where('key', 'telegram_alert_threshold')->value('value') ?? '2.0';
+        $telegramAlertEnabled = Setting::where('key', 'telegram_alert_enabled')->value('value') ?? '1';
+        $telegramRecipients = TelegramRecipient::all();
+
+        return view('setting.index', compact(
+            'apiKey',
+            'apiSecret',
+            'telegramBotToken',
+            'telegramAlertThreshold',
+            'telegramAlertEnabled',
+            'telegramRecipients'
+        ));
     }
 
     /**
@@ -242,11 +256,118 @@ class SettingController extends Controller
                 'message' => count($queries) . ' perubahan database berhasil disinkronkan.'
             ]);
         } catch (\Exception $e) {
-            Log::error('Apply database queries failed: ' . $e->getMessage());
+            Log::error("Failed to apply queries: " . $e->getMessage());
             return response()->json([
                 'success' => false, 
                 'message' => 'Gagal menerapkan query: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Update Telegram credentials and alert threshold.
+     */
+    public function updateTelegram(Request $request)
+    {
+        $request->validate([
+            'telegram_bot_token' => 'nullable|string|max:255',
+            'telegram_alert_threshold' => 'required|numeric|min:0.01|max:100',
+            'telegram_alert_enabled' => 'required|in:0,1',
+        ]);
+
+        Setting::updateOrCreate(
+            ['key' => 'telegram_bot_token'],
+            ['value' => trim($request->telegram_bot_token ?? '')]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'telegram_alert_threshold'],
+            ['value' => trim($request->telegram_alert_threshold)]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'telegram_alert_enabled'],
+            ['value' => trim($request->telegram_alert_enabled)]
+        );
+
+        return redirect()->route('setting.index')->with('success', 'Konfigurasi Telegram berhasil diperbarui.');
+    }
+
+    /**
+     * Store a new Telegram recipient.
+     */
+    public function storeTelegramRecipient(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'chat_id' => 'required|string|max:100|unique:telegram_recipients,chat_id',
+        ]);
+
+        TelegramRecipient::create([
+            'name' => trim($request->name),
+            'chat_id' => trim($request->chat_id),
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('setting.index')->with('success', 'Penerima notifikasi Telegram berhasil didaftarkan.');
+    }
+
+    /**
+     * Toggle active state of a Telegram recipient.
+     */
+    public function toggleTelegramRecipient($id)
+    {
+        $recipient = TelegramRecipient::findOrFail($id);
+        $recipient->is_active = !$recipient->is_active;
+        $recipient->save();
+
+        return redirect()->route('setting.index')->with('success', 'Status penerima Telegram berhasil diperbarui.');
+    }
+
+    /**
+     * Delete a Telegram recipient.
+     */
+    public function destroyTelegramRecipient($id)
+    {
+        $recipient = TelegramRecipient::findOrFail($id);
+        $recipient->delete();
+
+        return redirect()->route('setting.index')->with('success', 'Penerima Telegram berhasil dihapus.');
+    }
+
+    /**
+     * Test sending a welcome message to a specific Telegram Chat ID.
+     */
+    public function testTelegramRecipient($id)
+    {
+        $recipient = TelegramRecipient::findOrFail($id);
+        $botToken = Setting::where('key', 'telegram_bot_token')->value('value');
+
+        if (empty($botToken)) {
+            return redirect()->route('setting.index')->with('error', 'Gagal mengirim test: Bot Token Telegram belum dikonfigurasi.');
+        }
+
+        $message = "🔔 *Uji Coba Notifikasi Jurnal Trading*\n\n"
+                 . "Halo *{$recipient->name}*,\n"
+                 . "Koneksi bot Telegram Anda ke sistem *Jurnal Trading* berhasil terhubung 100%! "
+                 . "Anda akan menerima notifikasi otomatis jika terdapat pergerakan harga aset portfolio Anda di atas ambang batas yang ditentukan.";
+
+        try {
+            $response = Http::timeout(6)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                'chat_id' => $recipient->chat_id,
+                'text' => $message,
+                'parse_mode' => 'Markdown',
+            ]);
+
+            if ($response->successful()) {
+                return redirect()->route('setting.index')->with('success', "Test notifikasi berhasil dikirim ke {$recipient->name}.");
+            } else {
+                $errorData = $response->json();
+                $errorMsg = $errorData['description'] ?? $response->body();
+                return redirect()->route('setting.index')->with('error', "Telegram API Error: " . $errorMsg);
+            }
+        } catch (\Exception $e) {
+            return redirect()->route('setting.index')->with('error', "Gagal menghubungi Telegram API: " . $e->getMessage());
         }
     }
 }
