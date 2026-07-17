@@ -113,7 +113,9 @@
                     Peringatan dikirim jika harga aset bergerak melampaui batas persentase ini.
                 </small>
             </div>
-
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%; padding: 0.8rem;">
+                Simpan Setelan Telegram
+            </button>
         </form>
 
         <form action="{{ route('setting.telegram.check') }}" method="POST" style="margin-top: 1rem;">
