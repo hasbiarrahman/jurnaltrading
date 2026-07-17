@@ -112,7 +112,7 @@ class CheckPriceAlerts extends Command
                     'last_alert_price' => $currentPriceUsdt,
                     'last_alert_time' => now()
                 ]);
-                $this->info("Initialized baseline price for {$ticker} at ${$currentPriceUsdt}");
+                $this->info("Initialized baseline price for {$ticker} at $" . $currentPriceUsdt);
                 continue;
             }
 
