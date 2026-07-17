@@ -78,6 +78,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/setting/telegram/recipient/{id}/toggle', [SettingController::class, 'toggleTelegramRecipient'])->name('setting.telegram.recipient.toggle');
         Route::post('/setting/telegram/recipient/{id}/test', [SettingController::class, 'testTelegramRecipient'])->name('setting.telegram.recipient.test');
         Route::delete('/setting/telegram/recipient/{id}', [SettingController::class, 'destroyTelegramRecipient'])->name('setting.telegram.recipient.destroy');
+        Route::post('/setting/database/migrate', [SettingController::class, 'runMigrations'])->name('setting.database.migrate');
 
         // Scanner Routes
         Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');

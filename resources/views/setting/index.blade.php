@@ -224,10 +224,17 @@
             Masukkan URL local server Anda (misal: <code>http://localhost:8080</code>) dan klik <strong>Cek Perubahan Lokal</strong> untuk memindai antrean perubahan database yang tertunda.
         </div>
 
-        <div style="margin-top: 1.5rem;">
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
             <button type="button" id="btnRunSync" class="btn btn-primary" style="display: none; padding: 0.8rem 2rem; font-size: 0.95rem; font-weight: 600;">
                 Sinkron DB Sekarang
             </button>
+            
+            <form action="{{ route('setting.database.migrate') }}" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin menjalankan migrasi database? Langkah ini akan membuat tabel baru jika belum terbuat di server produksi.')">
+                @csrf
+                <button type="submit" class="btn btn-secondary" style="padding: 0.8rem 2rem; font-size: 0.95rem; font-weight: 600; background: rgba(147, 51, 234, 0.15); border: 1px solid rgba(147, 51, 234, 0.3); color: #c084fc;">
+                    Jalankan Migrasi Database
+                </button>
+            </form>
         </div>
     </div>
 </div>

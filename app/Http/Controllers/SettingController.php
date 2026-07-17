@@ -374,4 +374,22 @@ class SettingController extends Controller
             return redirect()->route('setting.index')->with('error', "Gagal menghubungi Telegram API: " . $e->getMessage());
         }
     }
+
+    /**
+     * Run migrations in production server.
+     */
+    public function runMigrations()
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            
+            Log::info("CLI Migrations Executed successfully:\n" . $output);
+
+            return redirect()->route('setting.index')->with('success', 'Migrasi database berhasil dijalankan! Tabel-tabel Telegram baru telah sukses dibuat di server.');
+        } catch (\Exception $e) {
+            Log::error("Failed running CLI migrations: " . $e->getMessage());
+            return redirect()->route('setting.index')->with('error', 'Gagal menjalankan migrasi: ' . $e->getMessage());
+        }
+    }
 }
