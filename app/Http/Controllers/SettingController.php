@@ -22,7 +22,11 @@ class SettingController extends Controller
         $telegramBotToken = Setting::where('key', 'telegram_bot_token')->value('value') ?? '';
         $telegramAlertThreshold = Setting::where('key', 'telegram_alert_threshold')->value('value') ?? '2.0';
         $telegramAlertEnabled = Setting::where('key', 'telegram_alert_enabled')->value('value') ?? '1';
-        $telegramRecipients = TelegramRecipient::all();
+        
+        $telegramRecipients = collect();
+        if (\Illuminate\Support\Facades\Schema::hasTable('telegram_recipients')) {
+            $telegramRecipients = TelegramRecipient::all();
+        }
 
         return view('setting.index', compact(
             'apiKey',
