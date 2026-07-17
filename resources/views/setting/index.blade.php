@@ -114,8 +114,12 @@
                 </small>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%; padding: 0.8rem;">
-                Simpan Setelan Telegram
+        </form>
+
+        <form action="{{ route('setting.telegram.check') }}" method="POST" style="margin-top: 1rem;">
+            @csrf
+            <button type="submit" class="btn btn-secondary" style="width: 100%; padding: 0.8rem; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa;">
+                ⚡ Jalankan Scan Harga Sekarang
             </button>
         </form>
     </div>

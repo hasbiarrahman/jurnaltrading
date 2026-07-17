@@ -392,4 +392,22 @@ class SettingController extends Controller
             return redirect()->route('setting.index')->with('error', 'Gagal menjalankan migrasi: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Trigger manual price check.
+     */
+    public function triggerPriceCheck()
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('telegram:check-price-alerts');
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            
+            Log::info("Manual Price Check Executed:\n" . $output);
+
+            return redirect()->route('setting.index')->with('success', 'Scan harga berhasil dipicu! Output: ' . str_replace("\n", " | ", trim($output)));
+        } catch (\Exception $e) {
+            Log::error("Failed running manual price check: " . $e->getMessage());
+            return redirect()->route('setting.index')->with('error', 'Gagal memicu scan harga: ' . $e->getMessage());
+        }
+    }
 }
