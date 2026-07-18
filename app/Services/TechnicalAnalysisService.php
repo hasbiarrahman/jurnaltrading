@@ -498,17 +498,23 @@ class TechnicalAnalysisService
                                 $history7d = array_slice($history, -7);
 
                                 $sum3d = 0.0;
+                                $sumLong3d = 0.0;
                                 foreach ($history3d as $h) {
                                     $sum3d += (float)($h['s'] ?? 0.0);
+                                    $sumLong3d += (float)($h['l'] ?? 0.0);
                                 }
 
                                 $sum7d = 0.0;
+                                $sumLong7d = 0.0;
                                 foreach ($history7d as $h) {
                                     $sum7d += (float)($h['s'] ?? 0.0);
+                                    $sumLong7d += (float)($h['l'] ?? 0.0);
                                 }
 
                                 $shortLiq3d = $sum3d;
                                 $shortLiq7d = $sum7d;
+                                $longLiq3d = $sumLong3d;
+                                $longLiq7d = $sumLong7d;
                             }
                         }
                     }
@@ -522,8 +528,13 @@ class TechnicalAnalysisService
 
             // Generate liquidation insight text if available
             $liqAdvice = "";
-            if ($shortLiq3d !== null && $shortLiq3d > 0) {
-                $liqAdvice = " Likuidasi short futures 3 hari terakhir mencapai " . $this->formatLiquidation($shortLiq3d) . " (7 hari: " . $this->formatLiquidation($shortLiq7d) . "). Tekanan likuidasi short ini memberi dorongan beli tambahan di pasar.";
+            if ($shortLiq3d !== null && ($shortLiq3d > 0 || $longLiq3d > 0)) {
+                $liqAdvice = " Likuidasi futures 3 hari terakhir (Long: " . $this->formatLiquidation($longLiq3d) . ", Short: " . $this->formatLiquidation($shortLiq3d) . ").";
+                if ($shortLiq3d > $longLiq3d * 1.5) {
+                    $liqAdvice .= " Tekanan likuidasi short yang dominan memberi dorongan beli tambahan di pasar.";
+                } elseif ($longLiq3d > $shortLiq3d * 1.5) {
+                    $liqAdvice .= " Tekanan likuidasi long yang dominan mengindikasikan adanya tekanan jual dari panic selling pembeli.";
+                }
             }
 
             // Score and advice
@@ -571,8 +582,12 @@ class TechnicalAnalysisService
                 'advice' => $advice,
                 'short_liq_3d' => $shortLiq3d,
                 'short_liq_7d' => $shortLiq7d,
+                'long_liq_3d' => $longLiq3d,
+                'long_liq_7d' => $longLiq7d,
                 'short_liq_3d_formatted' => $this->formatLiquidation($shortLiq3d),
                 'short_liq_7d_formatted' => $this->formatLiquidation($shortLiq7d),
+                'long_liq_3d_formatted' => $this->formatLiquidation($longLiq3d),
+                'long_liq_7d_formatted' => $this->formatLiquidation($longLiq7d),
                 'has_coinalyze_key' => !empty($coinalyzeKey),
             ];
 

@@ -180,15 +180,35 @@
 
             <!-- Liquidation Data Card -->
             <div id="analisa-liquidation-card" style="margin-bottom: 1.5rem;">
-                <h4 style="font-size: 0.85rem; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 0.5px; margin-top: 0;">Data Likuidasi Short Futures</h4>
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 0.5px; margin-top: 0;">Data Likuidasi Futures (Coinalyze)</h4>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                    <div style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; text-align: center;">
-                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.15rem;">3 Hari Terakhir</span>
-                        <span id="analisa-liq-3d" style="font-size: 1.15rem; font-weight: 800; color: white; font-family: monospace;">-</span>
+                    <!-- Long Liquidations -->
+                    <div style="padding: 0.75rem; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 6px; text-align: center;">
+                        <span style="font-size: 0.7rem; color: #a7f3d0; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Likuidasi Long</span>
+                        <div style="font-size: 0.85rem; color: white; display: flex; flex-direction: column; gap: 0.25rem; align-items: center;">
+                            <div style="width: 100%; display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">3 Hari:</span>
+                                <strong id="analisa-liq-long-3d" style="font-family: monospace;">-</strong>
+                            </div>
+                            <div style="width: 100%; display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">7 Hari:</span>
+                                <strong id="analisa-liq-long-7d" style="font-family: monospace;">-</strong>
+                            </div>
+                        </div>
                     </div>
+                    <!-- Short Liquidations -->
                     <div style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; text-align: center;">
-                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.15rem;">7 Hari Terakhir</span>
-                        <span id="analisa-liq-7d" style="font-size: 1.15rem; font-weight: 800; color: white; font-family: monospace;">-</span>
+                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Likuidasi Short</span>
+                        <div style="font-size: 0.85rem; color: white; display: flex; flex-direction: column; gap: 0.25rem; align-items: center;">
+                            <div style="width: 100%; display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">3 Hari:</span>
+                                <strong id="analisa-liq-short-3d" style="font-family: monospace;">-</strong>
+                            </div>
+                            <div style="width: 100%; display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">7 Hari:</span>
+                                <strong id="analisa-liq-short-7d" style="font-family: monospace;">-</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div id="analisa-liq-warning" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; font-style: italic; display: none;">
@@ -534,17 +554,23 @@
                     document.getElementById('analisa-advice').textContent = analysis.advice;
                     
                     // Update Liquidation fields
-                    const liq3dEl = document.getElementById('analisa-liq-3d');
-                    const liq7dEl = document.getElementById('analisa-liq-7d');
+                    const liqLong3d = document.getElementById('analisa-liq-long-3d');
+                    const liqLong7d = document.getElementById('analisa-liq-long-7d');
+                    const liqShort3d = document.getElementById('analisa-liq-short-3d');
+                    const liqShort7d = document.getElementById('analisa-liq-short-7d');
                     const warningEl = document.getElementById('analisa-liq-warning');
 
                     if (analysis.has_coinalyze_key) {
-                        liq3dEl.textContent = analysis.short_liq_3d_formatted;
-                        liq7dEl.textContent = analysis.short_liq_7d_formatted;
+                        liqLong3d.textContent = analysis.long_liq_3d_formatted;
+                        liqLong7d.textContent = analysis.long_liq_7d_formatted;
+                        liqShort3d.textContent = analysis.short_liq_3d_formatted;
+                        liqShort7d.textContent = analysis.short_liq_7d_formatted;
                         warningEl.style.display = 'none';
                     } else {
-                        liq3dEl.textContent = '-';
-                        liq7dEl.textContent = '-';
+                        liqLong3d.textContent = '-';
+                        liqLong7d.textContent = '-';
+                        liqShort3d.textContent = '-';
+                        liqShort7d.textContent = '-';
                         warningEl.style.display = 'block';
                     }
                     
