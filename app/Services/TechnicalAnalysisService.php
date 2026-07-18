@@ -471,7 +471,9 @@ class TechnicalAnalysisService
 
                     $liqResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/liquidation-history", [
                         'symbols' => $coinalyzeSymbol,
-                        'interval' => '1d',
+                        'interval' => 'daily',
+                        'from' => now()->subDays(9)->timestamp,
+                        'to' => now()->timestamp,
                         'api_key' => $coinalyzeKey
                     ]);
 
@@ -479,7 +481,9 @@ class TechnicalAnalysisService
                     if (!$liqResponse->successful() || empty($liqResponse->json())) {
                         $liqResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/liquidation-history", [
                             'symbols' => $symbol,
-                            'interval' => '1d',
+                            'interval' => 'daily',
+                            'from' => now()->subDays(9)->timestamp,
+                            'to' => now()->timestamp,
                             'api_key' => $coinalyzeKey
                         ]);
                     }

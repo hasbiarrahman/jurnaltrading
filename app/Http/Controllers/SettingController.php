@@ -438,7 +438,9 @@ class SettingController extends Controller
             try {
                 $response = Http::timeout(6)->get("https://api.coinalyze.net/v1/liquidation-history", [
                     'symbols' => $sym,
-                    'interval' => '1d',
+                    'interval' => 'daily',
+                    'from' => now()->subDays(9)->timestamp,
+                    'to' => now()->timestamp,
                     'api_key' => $key
                 ]);
                 $results[$sym] = [
