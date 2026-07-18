@@ -104,7 +104,7 @@
 </div>
 
 <!-- Modal Analisis Swing -->
-<div id="modal-analisa" style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(12px); background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1.5rem; transition: all 0.3s ease;">
+<div id="modal-analisa" style="display: none; position: fixed; inset: 0; z-index: 9999; backdrop-filter: blur(12px); background: rgba(0,0,0,0.6); align-items: flex-start; justify-content: center; padding: 2rem 1rem; overflow-y: auto; transition: all 0.3s ease;">
     <div class="glass-card" style="width: 100%; max-width: 520px; border: 1px solid rgba(255,255,255,0.1); background: rgba(13, 14, 38, 0.85); box-shadow: 0 24px 64px rgba(0,0,0,0.8); position: relative; animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 1.5rem;">
         <!-- Close Button -->
         <button onclick="closeAnalysisModal()" style="position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
@@ -516,6 +516,7 @@
         modalAnalisa.style.display = 'flex';
         loadingState.style.display = 'flex';
         contentState.style.display = 'none';
+        document.body.style.overflow = 'hidden'; // Lock background scroll
         
         document.getElementById('analisa-symbol').textContent = symbol;
         
@@ -591,6 +592,7 @@
     
     window.closeAnalysisModal = function() {
         modalAnalisa.style.display = 'none';
+        document.body.style.overflow = ''; // Unlock background scroll
     }
     
     // Close modal when clicking outside the card
