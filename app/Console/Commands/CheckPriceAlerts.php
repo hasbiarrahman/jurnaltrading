@@ -120,6 +120,57 @@ class CheckPriceAlerts extends Command
             $percentChange = (($currentPriceUsdt - $lastPrice) / $lastPrice) * 100.0;
 
             if (abs($percentChange) >= $threshold) {
+                // Calculate average buy price for this asset from trades table
+                $buyTrades = \App\Models\Trade::where('symbol', 'like', $asset . '%')
+                    ->where('type', 'BUY')
+                    ->get();
+
+                $totalBuyAmount = 0.0;
+                $totalBuyCostUsdt = 0.0;
+
+                foreach ($buyTrades as $trade) {
+                    $tradeSymbol = $trade->symbol;
+                    $tradePrice = (float)$trade->price;
+                    $tradeAmount = (float)$trade->amount;
+
+                    // Detect quote currency of trade (e.g. BIDR, USDT, IDRT)
+                    $tradeQuote = 'USDT';
+                    foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'IDR'] as $q) {
+                        if (str_ends_with($tradeSymbol, $q) && strlen($tradeSymbol) > strlen($q)) {
+                            $tradeQuote = $q;
+                            break;
+                        }
+                    }
+
+                    // Standardize trade price to USDT
+                    $priceInUsdt = $tradePrice;
+                    if ($tradeQuote === 'BIDR' || $tradeQuote === 'IDRT' || $tradeQuote === 'IDR') {
+                        $rate = $prices['USDTIDR'] ?? ($prices['USDT' . $tradeQuote] ?? ($prices['USDTIDRT'] ?? 16400.0));
+                        if ($rate > 100) {
+                            $priceInUsdt = $tradePrice / $rate;
+                        } else {
+                            $priceInUsdt = $tradePrice / 16400.0;
+                        }
+                    }
+
+                    $totalBuyAmount += $tradeAmount;
+                    $totalBuyCostUsdt += ($priceInUsdt * $tradeAmount);
+                }
+
+                $avgBuyPriceUsdt = $totalBuyAmount > 0 ? ($totalBuyCostUsdt / $totalBuyAmount) : 0.0;
+
+                // Fallback to current price if no buy trades recorded
+                if ($avgBuyPriceUsdt === 0.0) {
+                    $avgBuyPriceUsdt = $currentPriceUsdt;
+                }
+
+                // Calculate asset cost and unrealized PNL
+                $assetCostUsdt = $totalBalance * $avgBuyPriceUsdt;
+                $valuationUsdt = $totalBalance * $currentPriceUsdt;
+                $unrealizedPnlUsdt = $valuationUsdt - $assetCostUsdt;
+                $unrealizedPnlIdr = $unrealizedPnlUsdt * $usdtIdr;
+                $pnlPercent = $avgBuyPriceUsdt > 0 ? (($currentPriceUsdt - $avgBuyPriceUsdt) / $avgBuyPriceUsdt) * 100.0 : 0.0;
+
                 $direction = $percentChange > 0 ? 'PUMP 📈' : 'DUMP 📉';
                 $sign = $percentChange > 0 ? '+' : '';
                 
@@ -131,8 +182,17 @@ class CheckPriceAlerts extends Command
                 $lastPriceFormatted = $lastPrice >= 1.0 
                     ? '$' . number_format($lastPrice, 2) 
                     : '$' . number_format($lastPrice, 6);
+
+                $avgBuyPriceFormatted = $avgBuyPriceUsdt >= 1.0 
+                    ? '$' . number_format($avgBuyPriceUsdt, 2) 
+                    : '$' . number_format($avgBuyPriceUsdt, 6);
+
+                $pnlSign = $unrealizedPnlUsdt >= 0 ? '+' : '';
+                $pnlColorEmoji = $unrealizedPnlUsdt >= 0 ? '🟢' : '🔴';
                 
-                $valuationUsdt = $totalBalance * $currentPriceUsdt;
+                $pnlPercentFormatted = number_format($pnlPercent, 2) . '%';
+                $pnlValueFormatted = "Rp " . number_format($unrealizedPnlIdr, 0, ',', '.') . " (~$" . number_format($unrealizedPnlUsdt, 2) . ")";
+
                 $valuationIdr = $valuationUsdt * $usdtIdr;
 
                 $message = "🔔 *ALERT PERGERAKAN HARGA ({$direction})*\n\n"
@@ -140,8 +200,11 @@ class CheckPriceAlerts extends Command
                          . "Harga Sebelumnya: *{$lastPriceFormatted}*\n"
                          . "Harga Sekarang: *{$priceFormatted}*\n"
                          . "Perubahan: *{$sign}" . number_format($percentChange, 2) . "%*\n\n"
-                         . "Saldo Portfolio Anda: *" . number_format($totalBalance, 4) . " {$asset}*\n"
-                         . "Estimasi Nilai: *Rp " . number_format($valuationIdr, 0, ',', '.') . "* (~$" . number_format($valuationUsdt, 2) . ")\n\n"
+                         . "📊 *Statistik Posisi Anda:*\n"
+                         . "• Rata-rata Beli: *{$avgBuyPriceFormatted}*\n"
+                         . "• Saldo Aset: *" . number_format($totalBalance, 4) . " {$asset}*\n"
+                         . "• Estimasi Nilai: *Rp " . number_format($valuationIdr, 0, ',', '.') . "* (~$" . number_format($valuationUsdt, 2) . ")\n"
+                         . "• PNL Belum Terealisasi: {$pnlColorEmoji} *{$pnlSign}{$pnlPercentFormatted}* ({$pnlSign}{$pnlValueFormatted})\n\n"
                          . "📱 _Silakan cek Jurnal Trading untuk rincian lengkap._";
 
                 $this->info("Price Alert triggered for {$ticker}: {$sign}" . number_format($percentChange, 2) . "%");
