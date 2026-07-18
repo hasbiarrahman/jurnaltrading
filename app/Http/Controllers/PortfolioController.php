@@ -88,6 +88,29 @@ class PortfolioController extends Controller
             $unrealizedPnlUsdt = $valueUsdt - $assetCostUsdt;
             $pnlPercent = $avgBuyPriceUsdt > 0 ? (($currentPrice - $avgBuyPriceUsdt) / $avgBuyPriceUsdt) * 100 : 0.0;
 
+            // Find earliest BUY trade date to calculate holding duration
+            $firstBuyTrade = Trade::where('symbol', 'like', $assetName . '%')
+                ->where('type', 'BUY')
+                ->orderBy('trade_time', 'asc')
+                ->first();
+
+            $firstBuyDate = $firstBuyTrade ? \Carbon\Carbon::parse($firstBuyTrade->trade_time) : null;
+            $durationText = '-';
+            if ($firstBuyDate) {
+                $now = now();
+                $days = (int)$firstBuyDate->diffInDays($now);
+                if ($days > 0) {
+                    $durationText = $days . ' hari';
+                } else {
+                    $hours = (int)$firstBuyDate->diffInHours($now);
+                    if ($hours > 0) {
+                        $durationText = $hours . ' jam';
+                    } else {
+                        $durationText = 'Hari ini';
+                    }
+                }
+            }
+
             $totalCostUsdt += $assetCostUsdt;
             $totalCurrentValuationUsdt += $valueUsdt;
 
@@ -107,6 +130,8 @@ class PortfolioController extends Controller
                 'pnl_usdt' => $unrealizedPnlUsdt,
                 'pnl_idr' => $unrealizedPnlUsdt * $usdtIdr,
                 'pnl_percent' => $pnlPercent,
+                'duration_text' => $durationText,
+                'first_buy_date' => $firstBuyDate ? $firstBuyDate->format('Y-m-d') : null,
                 'source' => $assetData['source']
             ];
         }

@@ -71,6 +71,7 @@
                 <tr>
                     <th>Aset</th>
                     <th>Jumlah Saldo</th>
+                    <th>Durasi</th>
                     <th>Harga Rata-rata Beli</th>
                     <th>Harga Pasar</th>
                     <th>Modal (Cost Basis)</th>
@@ -91,6 +92,16 @@
                             <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400; margin-top: 0.15rem;">
                                 Tersedia: {{ number_format($asset['free'], 4) }} | Order: {{ number_format($asset['locked'], 4) }}
                             </div>
+                        </td>
+                        <td>
+                            <span class="badge" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); font-weight: 600; padding: 0.35rem 0.65rem; border-radius: 6px; display: inline-block;">
+                                {{ $asset['duration_text'] }}
+                            </span>
+                            @if($asset['first_buy_date'])
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                    Sejak: {{ $asset['first_buy_date'] }}
+                                </div>
+                            @endif
                         </td>
                         <td style="font-family: monospace;">
                             ${{ number_format($asset['avg_buy_price_usdt'], 4) }}
@@ -138,8 +149,8 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 4rem 0;">
-                            Tidak ada aset dalam portofolio Anda.
+                        <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                            Tidak ada saldo aset aktif di portfolio saat ini.
                         </td>
                     </tr>
                 @endforelse
