@@ -260,24 +260,28 @@
                     calculateStats();
                     renderTable();
                 } else {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
-                                Tidak ada data pemindaian. Silakan jalankan Scan Sekarang.
-                            </td>
-                        </tr>
-                    `;
+                    if (scannerItems.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                                    Tidak ada data pemindaian. Silakan jalankan Scan Sekarang.
+                                </td>
+                            </tr>
+                        `;
+                    }
                 }
             })
             .catch(err => {
                 console.error("Failed to load all scanner results", err);
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; color: var(--color-danger); padding: 3rem 0; font-weight: 600;">
-                            Gagal memuat data hasil scan.
-                        </td>
-                    </tr>
-                `;
+                if (scannerItems.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--color-danger); padding: 3rem 0; font-weight: 600;">
+                                Gagal memuat data hasil scan.
+                            </td>
+                        </tr>
+                    `;
+                }
             });
     }
 
