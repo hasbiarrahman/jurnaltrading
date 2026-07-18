@@ -283,18 +283,18 @@ class TechnicalAnalysisService
         try {
             $symbol = strtoupper(trim($symbol));
             
-            // Fetch daily klines (using Tokocrypto site MBX engine)
-            $response = Http::timeout(3)->get("https://www.tokocrypto.site/api/v3/klines", [
+            // Fetch daily klines (250 candles for stable EMA 50 & 200)
+            $response = Http::timeout(4)->get("https://www.tokocrypto.site/api/v3/klines", [
                 'symbol' => $symbol,
                 'interval' => '1d',
-                'limit' => 60 // 2 months of history is plenty to identify local peaks
+                'limit' => 250
             ]);
 
             if (!$response->successful()) {
-                $response = Http::timeout(3)->get("https://api.binance.com/api/v3/klines", [
+                $response = Http::timeout(4)->get("https://api.binance.com/api/v3/klines", [
                     'symbol' => $symbol,
                     'interval' => '1d',
-                    'limit' => 60
+                    'limit' => 250
                 ]);
             }
 
@@ -303,7 +303,8 @@ class TechnicalAnalysisService
             }
 
             $klines = $response->json();
-            if (count($klines) < 15) {
+            $len = count($klines);
+            if ($len < 15) {
                 return null;
             }
 
@@ -318,33 +319,86 @@ class TechnicalAnalysisService
             }
 
             $currentPrice = end($closes);
-            $len = count($closes);
-            
+
+            // 1. Calculate EMA 50 and EMA 200
+            $ema50Arr = $this->calculateEMA($closes, 50);
+            $ema200Arr = $this->calculateEMA($closes, 200);
+            $ema50 = end($ema50Arr);
+            $ema200 = end($ema200Arr);
+
+            // Determine Trend Status
+            $trend = 'Neutral';
+            if ($currentPrice > $ema50 && $ema50 > $ema200) {
+                $trend = 'Bullish Kuat (Strong Bullish) 🟢';
+            } elseif ($currentPrice > $ema50 && $ema50 <= $ema200) {
+                $trend = 'Pemulihan Bullish (Bullish Recovery) 🟡';
+            } elseif ($currentPrice < $ema50 && $ema50 < $ema200) {
+                $trend = 'Bearish Kuat (Strong Bearish) 🔴';
+            } elseif ($currentPrice < $ema50 && $ema50 >= $ema200) {
+                $trend = 'Koreksi Bearish (Bearish Correction) 🟡';
+            }
+
+            // 2. Fibonacci Retracement Levels (based on last 60 days range)
+            $last60Highs = array_slice($highs, -60);
+            $last60Lows = array_slice($lows, -60);
+            $fibHigh = max($last60Highs);
+            $fibLow = min($last60Lows);
+            $fibDiff = $fibHigh - $fibLow;
+
+            $fib05 = $fibHigh - 0.5 * $fibDiff;
+            $fib0618 = $fibHigh - 0.618 * $fibDiff; // Golden Pocket
+
+            // 3. Upgraded S&R Detection (15-candle window: 7 left, 7 right)
             $peaks = [];
             $troughs = [];
 
-            // Detect local peaks/troughs using a 2-candle window on each side
-            for ($i = 2; $i < $len - 2; $i++) {
+            for ($i = 7; $i < $len - 7; $i++) {
                 // Peak (Resistance)
-                if ($highs[$i] >= $highs[$i-1] && 
-                    $highs[$i] >= $highs[$i-2] && 
-                    $highs[$i] >= $highs[$i+1] && 
-                    $highs[$i] >= $highs[$i+2]) {
+                $isPeak = true;
+                for ($j = 1; $j <= 7; $j++) {
+                    if ($highs[$i] < $highs[$i - $j] || $highs[$i] < $highs[$i + $j]) {
+                        $isPeak = false;
+                        break;
+                    }
+                }
+                if ($isPeak) {
                     $peaks[] = $highs[$i];
                 }
                 
                 // Trough (Support)
-                if ($lows[$i] <= $lows[$i-1] && 
-                    $lows[$i] <= $lows[$i-2] && 
-                    $lows[$i] <= $lows[$i+1] && 
-                    $lows[$i] <= $lows[$i+2]) {
+                $isTrough = true;
+                for ($j = 1; $j <= 7; $j++) {
+                    if ($lows[$i] > $lows[$i - $j] || $lows[$i] > $lows[$i + $j]) {
+                        $isTrough = false;
+                        break;
+                    }
+                }
+                if ($isTrough) {
                     $troughs[] = $lows[$i];
                 }
             }
 
-            // Also consider the absolute lowest/highest close prices as candidates
+            // Include absolute lowest/highest close prices as candidates
             $troughs[] = min($lows);
             $peaks[] = max($highs);
+
+            // Add Fibonacci levels and EMA lines as S&R candidates
+            $troughs[] = $fib05;
+            $troughs[] = $fib0618;
+            $peaks[] = $fib05;
+            $peaks[] = $fib0618;
+
+            if ($ema50 < $currentPrice) {
+                $troughs[] = $ema50;
+            } else {
+                $peaks[] = $ema50;
+            }
+
+            if ($ema200 < $currentPrice) {
+                $troughs[] = $ema200;
+            } else {
+                $peaks[] = $ema200;
+            }
 
             // Filter supports (troughs below current price)
             $supports = array_filter($troughs, function($val) use ($currentPrice) {
@@ -403,19 +457,35 @@ class TechnicalAnalysisService
             $pctRisk = ($risk / $currentPrice) * 100;
             $pctReward = ($reward / $currentPrice) * 100;
 
+            // Determine if price is close to Fibonacci Golden Pocket (within 1.5%)
+            $nearGoldenPocket = (abs($currentPrice - $fib0618) / $fib0618) <= 0.015;
+
             // Score and advice
             if ($ratio >= 2.0 && $pctRisk <= 8.5) {
                 $score = 'Sangat Bagus (Excellent)';
                 $scoreClass = 'text-success';
-                $advice = 'Setup ideal! Rasio keuntungan sangat besar dengan risiko penempatan stop-loss yang ketat. Direkomendasikan untuk cicil beli (buy on weakness) mendekati support.';
+                
+                $advice = "Setup ideal! Rasio keuntungan sangat besar dengan risiko penempatan stop-loss yang ketat. Tren saat ini: {$trend}.";
+                if ($nearGoldenPocket) {
+                    $advice .= " Harga berada di dekat Golden Pocket Fibonacci 0.618, area support historis yang sangat kuat! Direkomendasikan untuk entri buy.";
+                } else {
+                    $advice .= " Direkomendasikan untuk cicil beli (buy on weakness) mendekati support.";
+                }
             } elseif ($ratio >= 1.0) {
                 $score = 'Moderat (Moderate)';
                 $scoreClass = 'text-warning';
-                $advice = 'Setup lumayan sehat. Disarankan untuk menunggu harga terkoreksi sedikit lebih dekat ke support untuk memaksimalkan rasio risk-to-reward sebelum entri.';
+                
+                $advice = "Setup lumayan sehat. Tren saat ini: {$trend}.";
+                if ($nearGoldenPocket) {
+                    $advice .= " Harga tertahan di Golden Pocket Fibonacci 0.618. Bagus untuk spekulasi beli dengan target ketat.";
+                } else {
+                    $advice .= " Disarankan untuk menunggu harga terkoreksi sedikit lebih dekat ke support untuk memaksimalkan rasio risk-to-reward sebelum entri.";
+                }
             } else {
                 $score = 'Kurang Menarik (Poor)';
                 $scoreClass = 'text-danger';
-                $advice = 'Rasio Risk-to-Reward kurang menguntungkan saat ini (potensi kerugian mendekati atau lebih besar dari keuntungan). Disarankan untuk mencari peluang di koin lain.';
+                
+                $advice = "Rasio Risk-to-Reward kurang menguntungkan saat ini (potensi kerugian mendekati atau lebih besar dari keuntungan). Tren saat ini: {$trend}. Disarankan untuk mencari peluang di koin lain.";
             }
 
             return [
@@ -436,7 +506,39 @@ class TechnicalAnalysisService
             ];
 
         } catch (\Exception $e) {
+            \Log::error("Failed swing analysis: " . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Helper to calculate Exponential Moving Average (EMA).
+     */
+    private function calculateEMA(array $data, int $period): array
+    {
+        $len = count($data);
+        if ($len < $period) {
+            return array_fill(0, $len, end($data));
+        }
+
+        $ema = [];
+        // Start with Simple Moving Average (SMA)
+        $sum = 0;
+        for ($i = 0; $i < $period; $i++) {
+            $sum += $data[$i];
+        }
+        $sma = $sum / $period;
+
+        for ($i = 0; $i < $period - 1; $i++) {
+            $ema[$i] = $data[$i];
+        }
+        $ema[$period - 1] = $sma;
+
+        $multiplier = 2 / ($period + 1);
+        for ($i = $period; $i < $len; $i++) {
+            $ema[$i] = ($data[$i] - $ema[$i - 1]) * $multiplier + $ema[$i - 1];
+        }
+
+        return $ema;
     }
 }
