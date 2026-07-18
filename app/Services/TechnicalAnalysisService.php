@@ -457,15 +457,77 @@ class TechnicalAnalysisService
             $pctRisk = ($risk / $currentPrice) * 100;
             $pctReward = ($reward / $currentPrice) * 100;
 
+            // 4. Fetch Coinalyze Short Liquidation History if API key exists
+            $coinalyzeKey = \App\Models\Setting::where('key', 'coinalyze_api_key')->value('value');
+            $shortLiq3d = null;
+            $shortLiq7d = null;
+            
+            if (!empty($coinalyzeKey)) {
+                try {
+                    $coinalyzeSymbol = $symbol; // e.g. STRKUSDT
+                    if (!str_contains($coinalyzeSymbol, '_PERP')) {
+                        $coinalyzeSymbol = $coinalyzeSymbol . '_PERP.A';
+                    }
+
+                    $liqResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/liquidation-history", [
+                        'symbols' => $coinalyzeSymbol,
+                        'interval' => '1d',
+                        'api_key' => $coinalyzeKey
+                    ]);
+
+                    // Fallback to symbol without _PERP.A if empty or error
+                    if (!$liqResponse->successful() || empty($liqResponse->json())) {
+                        $liqResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/liquidation-history", [
+                            'symbols' => $symbol,
+                            'interval' => '1d',
+                            'api_key' => $coinalyzeKey
+                        ]);
+                    }
+
+                    if ($liqResponse->successful()) {
+                        $liqData = $liqResponse->json();
+                        if (!empty($liqData) && is_array($liqData)) {
+                            $symbolData = $liqData[0] ?? null;
+                            $history = $symbolData['history'] ?? [];
+                            if (is_array($history) && count($history) > 0) {
+                                $history3d = array_slice($history, -3);
+                                $history7d = array_slice($history, -7);
+
+                                $sum3d = 0.0;
+                                foreach ($history3d as $h) {
+                                    $sum3d += (float)($h['s'] ?? 0.0);
+                                }
+
+                                $sum7d = 0.0;
+                                foreach ($history7d as $h) {
+                                    $sum7d += (float)($h['s'] ?? 0.0);
+                                }
+
+                                $shortLiq3d = $sum3d;
+                                $shortLiq7d = $sum7d;
+                            }
+                        }
+                    }
+                } catch (\Exception $ex) {
+                    \Log::warning("Coinalyze API request failed: " . $ex->getMessage());
+                }
+            }
+
             // Determine if price is close to Fibonacci Golden Pocket (within 1.5%)
             $nearGoldenPocket = (abs($currentPrice - $fib0618) / $fib0618) <= 0.015;
+
+            // Generate liquidation insight text if available
+            $liqAdvice = "";
+            if ($shortLiq3d !== null && $shortLiq3d > 0) {
+                $liqAdvice = " Likuidasi short futures 3 hari terakhir mencapai " . $this->formatLiquidation($shortLiq3d) . " (7 hari: " . $this->formatLiquidation($shortLiq7d) . "). Tekanan likuidasi short ini memberi dorongan beli tambahan di pasar.";
+            }
 
             // Score and advice
             if ($ratio >= 2.0 && $pctRisk <= 8.5) {
                 $score = 'Sangat Bagus (Excellent)';
                 $scoreClass = 'text-success';
                 
-                $advice = "Setup ideal! Rasio keuntungan sangat besar dengan risiko penempatan stop-loss yang ketat. Tren saat ini: {$trend}.";
+                $advice = "Setup ideal! Rasio keuntungan sangat besar dengan risiko penempatan stop-loss yang ketat. Tren saat ini: {$trend}." . $liqAdvice;
                 if ($nearGoldenPocket) {
                     $advice .= " Harga berada di dekat Golden Pocket Fibonacci 0.618, area support historis yang sangat kuat! Direkomendasikan untuk entri buy.";
                 } else {
@@ -475,7 +537,7 @@ class TechnicalAnalysisService
                 $score = 'Moderat (Moderate)';
                 $scoreClass = 'text-warning';
                 
-                $advice = "Setup lumayan sehat. Tren saat ini: {$trend}.";
+                $advice = "Setup lumayan sehat. Tren saat ini: {$trend}." . $liqAdvice;
                 if ($nearGoldenPocket) {
                     $advice .= " Harga tertahan di Golden Pocket Fibonacci 0.618. Bagus untuk spekulasi beli dengan target ketat.";
                 } else {
@@ -485,7 +547,7 @@ class TechnicalAnalysisService
                 $score = 'Kurang Menarik (Poor)';
                 $scoreClass = 'text-danger';
                 
-                $advice = "Rasio Risk-to-Reward kurang menguntungkan saat ini (potensi kerugian mendekati atau lebih besar dari keuntungan). Tren saat ini: {$trend}. Disarankan untuk mencari peluang di koin lain.";
+                $advice = "Rasio Risk-to-Reward kurang menguntungkan saat ini (potensi kerugian mendekati atau lebih besar dari keuntungan). Tren saat ini: {$trend}." . $liqAdvice . " Disarankan untuk mencari peluang di koin lain.";
             }
 
             return [
@@ -502,7 +564,12 @@ class TechnicalAnalysisService
                 'ratio' => $ratio,
                 'score' => $score,
                 'score_class' => $scoreClass,
-                'advice' => $advice
+                'advice' => $advice,
+                'short_liq_3d' => $shortLiq3d,
+                'short_liq_7d' => $shortLiq7d,
+                'short_liq_3d_formatted' => $this->formatLiquidation($shortLiq3d),
+                'short_liq_7d_formatted' => $this->formatLiquidation($shortLiq7d),
+                'has_coinalyze_key' => !empty($coinalyzeKey),
             ];
 
         } catch (\Exception $e) {
@@ -540,5 +607,20 @@ class TechnicalAnalysisService
         }
 
         return $ema;
+    }
+
+    /**
+     * Helper to format liquidation values to human readable K/M suffixes.
+     */
+    private function formatLiquidation($value)
+    {
+        if ($value === null) return '-';
+        if ($value >= 1000000) {
+            return '$' . number_format($value / 1000000, 2) . 'M';
+        }
+        if ($value >= 1000) {
+            return '$' . number_format($value / 1000, 2) . 'K';
+        }
+        return '$' . number_format($value, 2);
     }
 }

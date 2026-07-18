@@ -22,6 +22,7 @@ class SettingController extends Controller
         $telegramBotToken = Setting::where('key', 'telegram_bot_token')->value('value') ?? '';
         $telegramAlertThreshold = Setting::where('key', 'telegram_alert_threshold')->value('value') ?? '2.0';
         $telegramAlertEnabled = Setting::where('key', 'telegram_alert_enabled')->value('value') ?? '1';
+        $coinalyzeApiKey = Setting::where('key', 'coinalyze_api_key')->value('value') ?? '';
         
         $telegramRecipients = collect();
         if (\Illuminate\Support\Facades\Schema::hasTable('telegram_recipients')) {
@@ -34,6 +35,7 @@ class SettingController extends Controller
             'telegramBotToken',
             'telegramAlertThreshold',
             'telegramAlertEnabled',
+            'coinalyzeApiKey',
             'telegramRecipients'
         ));
     }
@@ -277,6 +279,7 @@ class SettingController extends Controller
             'telegram_bot_token' => 'nullable|string|max:255',
             'telegram_alert_threshold' => 'required|numeric|min:0.01|max:100',
             'telegram_alert_enabled' => 'required|in:0,1',
+            'coinalyze_api_key' => 'nullable|string|max:255',
         ]);
 
         Setting::updateOrCreate(
@@ -294,7 +297,12 @@ class SettingController extends Controller
             ['value' => trim($request->telegram_alert_enabled)]
         );
 
-        return redirect()->route('setting.index')->with('success', 'Konfigurasi Telegram berhasil diperbarui.');
+        Setting::updateOrCreate(
+            ['key' => 'coinalyze_api_key'],
+            ['value' => trim($request->coinalyze_api_key ?? '')]
+        );
+
+        return redirect()->route('setting.index')->with('success', 'Konfigurasi integrasi berhasil diperbarui.');
     }
 
     /**

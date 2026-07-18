@@ -113,8 +113,15 @@
                     Peringatan dikirim jika harga aset bergerak melampaui batas persentase ini.
                 </small>
             </div>
+            <div class="form-group">
+                <label for="coinalyze_api_key" class="form-label">Coinalyze API Key (Opsional)</label>
+                <input type="text" name="coinalyze_api_key" id="coinalyze_api_key" class="form-control" placeholder="Masukkan Coinalyze API Key" value="{{ old('coinalyze_api_key', $coinalyzeApiKey) }}">
+                <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                    Digunakan untuk menampilkan data total likuidasi Short Futures (3 hari & 7 hari terakhir). Dapatkan gratis dari <a href="https://coinalyze.net/" target="_blank" style="color: var(--color-secondary); text-decoration: underline;">coinalyze.net</a>.
+                </small>
+            </div>
             <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%; padding: 0.8rem;">
-                Simpan Setelan Telegram
+                Simpan Setelan Integrasi
             </button>
         </form>
 

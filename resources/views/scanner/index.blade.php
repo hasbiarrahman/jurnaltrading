@@ -178,6 +178,24 @@
                 </div>
             </div>
 
+            <!-- Liquidation Data Card -->
+            <div id="analisa-liquidation-card" style="margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 0.5px; margin-top: 0;">Data Likuidasi Short Futures</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; text-align: center;">
+                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.15rem;">3 Hari Terakhir</span>
+                        <span id="analisa-liq-3d" style="font-size: 1.15rem; font-weight: 800; color: white; font-family: monospace;">-</span>
+                    </div>
+                    <div style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; text-align: center;">
+                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.15rem;">7 Hari Terakhir</span>
+                        <span id="analisa-liq-7d" style="font-size: 1.15rem; font-weight: 800; color: white; font-family: monospace;">-</span>
+                    </div>
+                </div>
+                <div id="analisa-liq-warning" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; font-style: italic; display: none;">
+                    *Masukkan API Key Coinalyze di Pengaturan untuk mengaktifkan data ini.
+                </div>
+            </div>
+
             <!-- Recommendation Card -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
                 <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Saran Tindakan:</span>
@@ -510,6 +528,21 @@
                     document.getElementById('analisa-r3').textContent = `$${parseFloat(analysis.r3).toFixed(4)}`;
                     
                     document.getElementById('analisa-advice').textContent = analysis.advice;
+                    
+                    // Update Liquidation fields
+                    const liq3dEl = document.getElementById('analisa-liq-3d');
+                    const liq7dEl = document.getElementById('analisa-liq-7d');
+                    const warningEl = document.getElementById('analisa-liq-warning');
+
+                    if (analysis.has_coinalyze_key) {
+                        liq3dEl.textContent = analysis.short_liq_3d_formatted;
+                        liq7dEl.textContent = analysis.short_liq_7d_formatted;
+                        warningEl.style.display = 'none';
+                    } else {
+                        liq3dEl.textContent = '-';
+                        liq7dEl.textContent = '-';
+                        warningEl.style.display = 'block';
+                    }
                     
                     // Toggle visibility
                     loadingState.style.display = 'none';
