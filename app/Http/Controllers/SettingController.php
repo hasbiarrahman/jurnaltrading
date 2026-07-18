@@ -418,4 +418,43 @@ class SettingController extends Controller
             return redirect()->route('setting.index')->with('error', 'Gagal memicu scan harga: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Debug Coinalyze API key and symbol query.
+     */
+    public function debugCoinalyze()
+    {
+        $key = Setting::where('key', 'coinalyze_api_key')->value('value');
+        if (empty($key)) {
+            return "Debug: API Key Coinalyze kosong di database Anda.";
+        }
+
+        $masked = substr($key, 0, 5) . "..." . substr($key, -3) . " (Length: " . strlen($key) . ")";
+        
+        $symbols = ['BTCUSDT_PERP.A', 'BTCUSDT', 'STRKUSDT_PERP.A', 'STRKUSDT'];
+        $results = [];
+
+        foreach ($symbols as $sym) {
+            try {
+                $response = Http::timeout(6)->get("https://api.coinalyze.net/v1/liquidation-history", [
+                    'symbols' => $sym,
+                    'interval' => '1d',
+                    'api_key' => $key
+                ]);
+                $results[$sym] = [
+                    'status' => $response->status(),
+                    'body' => json_decode($response->body(), true) ?? $response->body()
+                ];
+            } catch (\Exception $e) {
+                $results[$sym] = [
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'masked_key' => $masked,
+            'test_results' => $results
+        ], 200, [], JSON_PRETTY_PRINT);
+    }
 }

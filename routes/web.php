@@ -94,5 +94,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/scanner/all', [ScannerController::class, 'getAllResults'])->name('api.scanner.all');
         Route::post('/api/scanner/trigger', [ScannerController::class, 'startScan'])->name('api.scanner.trigger');
         Route::get('/api/scanner/analyse/{symbol}', [ScannerController::class, 'analyseSymbol'])->name('api.scanner.analyse');
+        Route::get('/setting/coinalyze-debug', [SettingController::class, 'debugCoinalyze']);
     });
 });
