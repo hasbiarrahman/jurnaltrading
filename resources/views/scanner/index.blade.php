@@ -184,9 +184,17 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                     <!-- Long Liquidations -->
                     <div style="padding: 0.75rem; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 6px; text-align: center;">
-                        <span style="font-size: 0.7rem; color: #a7f3d0; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Likuidasi Long</span>
-                        <div style="font-size: 0.85rem; color: white; display: flex; flex-direction: column; gap: 0.25rem; align-items: center;">
-                            <div style="width: 100%; display: flex; justify-content: space-between;">
+                        <span style="font-size: 0.7rem; color: #a7f3d0; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.45rem;">Likuidasi Long</span>
+                        <div style="font-size: 0.8rem; color: white; display: flex; flex-direction: column; gap: 0.35rem;">
+                            <div style="width: 100%; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">
+                                <span style="color: var(--text-muted);">4 Jam:</span>
+                                <strong id="analisa-liq-long-4h" style="font-family: monospace;">-</strong>
+                            </div>
+                            <div style="width: 100%; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">
+                                <span style="color: var(--text-muted);">24 Jam:</span>
+                                <strong id="analisa-liq-long-24h" style="font-family: monospace;">-</strong>
+                            </div>
+                            <div style="width: 100%; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">
                                 <span style="color: var(--text-muted);">3 Hari:</span>
                                 <strong id="analisa-liq-long-3d" style="font-family: monospace;">-</strong>
                             </div>
@@ -198,9 +206,17 @@
                     </div>
                     <!-- Short Liquidations -->
                     <div style="padding: 0.75rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; text-align: center;">
-                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Likuidasi Short</span>
-                        <div style="font-size: 0.85rem; color: white; display: flex; flex-direction: column; gap: 0.25rem; align-items: center;">
-                            <div style="width: 100%; display: flex; justify-content: space-between;">
+                        <span style="font-size: 0.7rem; color: #fca5a5; display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.45rem;">Likuidasi Short</span>
+                        <div style="font-size: 0.8rem; color: white; display: flex; flex-direction: column; gap: 0.35rem;">
+                            <div style="width: 100%; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">
+                                <span style="color: var(--text-muted);">4 Jam:</span>
+                                <strong id="analisa-liq-short-4h" style="font-family: monospace;">-</strong>
+                            </div>
+                            <div style="width: 100%; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">
+                                <span style="color: var(--text-muted);">24 Jam:</span>
+                                <strong id="analisa-liq-short-24h" style="font-family: monospace;">-</strong>
+                            </div>
+                            <div style="width: 100%; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.15rem;">
                                 <span style="color: var(--text-muted);">3 Hari:</span>
                                 <strong id="analisa-liq-short-3d" style="font-family: monospace;">-</strong>
                             </div>
@@ -555,21 +571,33 @@
                     document.getElementById('analisa-advice').textContent = analysis.advice;
                     
                     // Update Liquidation fields
+                    const liqLong4h = document.getElementById('analisa-liq-long-4h');
+                    const liqLong24h = document.getElementById('analisa-liq-long-24h');
                     const liqLong3d = document.getElementById('analisa-liq-long-3d');
                     const liqLong7d = document.getElementById('analisa-liq-long-7d');
+                    const liqShort4h = document.getElementById('analisa-liq-short-4h');
+                    const liqShort24h = document.getElementById('analisa-liq-short-24h');
                     const liqShort3d = document.getElementById('analisa-liq-short-3d');
                     const liqShort7d = document.getElementById('analisa-liq-short-7d');
                     const warningEl = document.getElementById('analisa-liq-warning');
 
                     if (analysis.has_coinalyze_key) {
+                        liqLong4h.textContent = analysis.long_liq_4h_formatted;
+                        liqLong24h.textContent = analysis.long_liq_24h_formatted;
                         liqLong3d.textContent = analysis.long_liq_3d_formatted;
                         liqLong7d.textContent = analysis.long_liq_7d_formatted;
+                        liqShort4h.textContent = analysis.short_liq_4h_formatted;
+                        liqShort24h.textContent = analysis.short_liq_24h_formatted;
                         liqShort3d.textContent = analysis.short_liq_3d_formatted;
                         liqShort7d.textContent = analysis.short_liq_7d_formatted;
                         warningEl.style.display = 'none';
                     } else {
+                        liqLong4h.textContent = '-';
+                        liqLong24h.textContent = '-';
                         liqLong3d.textContent = '-';
                         liqLong7d.textContent = '-';
+                        liqShort4h.textContent = '-';
+                        liqShort24h.textContent = '-';
                         liqShort3d.textContent = '-';
                         liqShort7d.textContent = '-';
                         warningEl.style.display = 'block';

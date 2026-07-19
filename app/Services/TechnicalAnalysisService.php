@@ -457,10 +457,16 @@ class TechnicalAnalysisService
             $pctRisk = ($risk / $currentPrice) * 100;
             $pctReward = ($reward / $currentPrice) * 100;
 
-            // 4. Fetch Coinalyze Short Liquidation History if API key exists
+            // 4. Fetch Coinalyze Short & Long Liquidation History if API key exists
             $coinalyzeKey = \App\Models\Setting::where('key', 'coinalyze_api_key')->value('value');
+            $shortLiq4h = null;
+            $longLiq4h = null;
+            $shortLiq24h = null;
+            $longLiq24h = null;
             $shortLiq3d = null;
+            $longLiq3d = null;
             $shortLiq7d = null;
+            $longLiq7d = null;
             
             if (!empty($coinalyzeKey)) {
                 try {
@@ -471,7 +477,7 @@ class TechnicalAnalysisService
 
                     $liqResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/liquidation-history", [
                         'symbols' => $coinalyzeSymbol,
-                        'interval' => 'daily',
+                        'interval' => '4hour',
                         'from' => now()->subDays(9)->timestamp,
                         'to' => now()->timestamp,
                         'api_key' => $coinalyzeKey
@@ -481,7 +487,7 @@ class TechnicalAnalysisService
                     if (!$liqResponse->successful() || empty($liqResponse->json())) {
                         $liqResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/liquidation-history", [
                             'symbols' => $symbol,
-                            'interval' => 'daily',
+                            'interval' => '4hour',
                             'from' => now()->subDays(9)->timestamp,
                             'to' => now()->timestamp,
                             'api_key' => $coinalyzeKey
@@ -494,26 +500,49 @@ class TechnicalAnalysisService
                             $symbolData = $liqData[0] ?? null;
                             $history = $symbolData['history'] ?? [];
                             if (is_array($history) && count($history) > 0) {
-                                $history3d = array_slice($history, -3);
-                                $history7d = array_slice($history, -7);
+                                // 4 Hours (last 1 candle)
+                                $history4h = array_slice($history, -1);
+                                $sumShort4h = 0.0;
+                                $sumLong4h = 0.0;
+                                foreach ($history4h as $h) {
+                                    $sumShort4h += (float)($h['s'] ?? 0.0);
+                                    $sumLong4h += (float)($h['l'] ?? 0.0);
+                                }
 
-                                $sum3d = 0.0;
+                                // 24 Hours (last 6 candles)
+                                $history24h = array_slice($history, -6);
+                                $sumShort24h = 0.0;
+                                $sumLong24h = 0.0;
+                                foreach ($history24h as $h) {
+                                    $sumShort24h += (float)($h['s'] ?? 0.0);
+                                    $sumLong24h += (float)($h['l'] ?? 0.0);
+                                }
+
+                                // 3 Days (last 18 candles)
+                                $history3d = array_slice($history, -18);
+                                $sumShort3d = 0.0;
                                 $sumLong3d = 0.0;
                                 foreach ($history3d as $h) {
-                                    $sum3d += (float)($h['s'] ?? 0.0);
+                                    $sumShort3d += (float)($h['s'] ?? 0.0);
                                     $sumLong3d += (float)($h['l'] ?? 0.0);
                                 }
 
-                                $sum7d = 0.0;
+                                // 7 Days (last 42 candles)
+                                $history7d = array_slice($history, -42);
+                                $sumShort7d = 0.0;
                                 $sumLong7d = 0.0;
                                 foreach ($history7d as $h) {
-                                    $sum7d += (float)($h['s'] ?? 0.0);
+                                    $sumShort7d += (float)($h['s'] ?? 0.0);
                                     $sumLong7d += (float)($h['l'] ?? 0.0);
                                 }
 
-                                $shortLiq3d = $sum3d;
-                                $shortLiq7d = $sum7d;
+                                $shortLiq4h = $sumShort4h;
+                                $longLiq4h = $sumLong4h;
+                                $shortLiq24h = $sumShort24h;
+                                $longLiq24h = $sumLong24h;
+                                $shortLiq3d = $sumShort3d;
                                 $longLiq3d = $sumLong3d;
+                                $shortLiq7d = $sumShort7d;
                                 $longLiq7d = $sumLong7d;
                             }
                         }
@@ -528,11 +557,11 @@ class TechnicalAnalysisService
 
             // Generate liquidation insight text if available
             $liqAdvice = "";
-            if ($shortLiq3d !== null && ($shortLiq3d > 0 || $longLiq3d > 0)) {
-                $liqAdvice = " Likuidasi futures 3 hari terakhir (Long: " . $this->formatLiquidation($longLiq3d) . ", Short: " . $this->formatLiquidation($shortLiq3d) . ").";
-                if ($shortLiq3d > $longLiq3d * 1.5) {
+            if ($shortLiq24h !== null && ($shortLiq24h > 0 || $longLiq24h > 0)) {
+                $liqAdvice = " Likuidasi futures 24 jam terakhir (Long: " . $this->formatLiquidation($longLiq24h) . ", Short: " . $this->formatLiquidation($shortLiq24h) . ").";
+                if ($shortLiq24h > $longLiq24h * 1.5) {
                     $liqAdvice .= " Tekanan likuidasi short yang dominan memberi dorongan beli tambahan di pasar.";
-                } elseif ($longLiq3d > $shortLiq3d * 1.5) {
+                } elseif ($longLiq24h > $shortLiq24h * 1.5) {
                     $liqAdvice .= " Tekanan likuidasi long yang dominan mengindikasikan adanya tekanan jual dari panic selling pembeli.";
                 }
             }
@@ -580,13 +609,21 @@ class TechnicalAnalysisService
                 'score' => $score,
                 'score_class' => $scoreClass,
                 'advice' => $advice,
+                'short_liq_4h' => $shortLiq4h,
+                'long_liq_4h' => $longLiq4h,
+                'short_liq_24h' => $shortLiq24h,
+                'long_liq_24h' => $longLiq24h,
                 'short_liq_3d' => $shortLiq3d,
-                'short_liq_7d' => $shortLiq7d,
                 'long_liq_3d' => $longLiq3d,
+                'short_liq_7d' => $shortLiq7d,
                 'long_liq_7d' => $longLiq7d,
+                'short_liq_4h_formatted' => $this->formatLiquidation($shortLiq4h),
+                'long_liq_4h_formatted' => $this->formatLiquidation($longLiq4h),
+                'short_liq_24h_formatted' => $this->formatLiquidation($shortLiq24h),
+                'long_liq_24h_formatted' => $this->formatLiquidation($longLiq24h),
                 'short_liq_3d_formatted' => $this->formatLiquidation($shortLiq3d),
-                'short_liq_7d_formatted' => $this->formatLiquidation($shortLiq7d),
                 'long_liq_3d_formatted' => $this->formatLiquidation($longLiq3d),
+                'short_liq_7d_formatted' => $this->formatLiquidation($shortLiq7d),
                 'long_liq_7d_formatted' => $this->formatLiquidation($longLiq7d),
                 'has_coinalyze_key' => !empty($coinalyzeKey),
             ];
