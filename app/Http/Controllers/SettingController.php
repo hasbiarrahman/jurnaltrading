@@ -431,24 +431,24 @@ class SettingController extends Controller
 
         $masked = substr($key, 0, 5) . "..." . substr($key, -3) . " (Length: " . strlen($key) . ")";
         
-        $symbols = ['BTCUSDT_PERP.A', 'BTCUSDT', 'STRKUSDT_PERP.A', 'STRKUSDT'];
+        $sym = 'BTCUSDT_PERP.A';
         $results = [];
 
-        foreach ($symbols as $sym) {
+        foreach (['liquidation-history', 'ohlcv-history', 'open-interest-history'] as $endpoint) {
             try {
-                $response = Http::timeout(6)->get("https://api.coinalyze.net/v1/liquidation-history", [
+                $response = Http::timeout(6)->get("https://api.coinalyze.net/v1/{$endpoint}", [
                     'symbols' => $sym,
                     'interval' => '4hour',
-                    'from' => now()->subDays(9)->timestamp,
+                    'from' => now()->subDays(3)->timestamp,
                     'to' => now()->timestamp,
                     'api_key' => $key
                 ]);
-                $results[$sym] = [
+                $results[$endpoint] = [
                     'status' => $response->status(),
                     'body' => json_decode($response->body(), true) ?? $response->body()
                 ];
             } catch (\Exception $e) {
-                $results[$sym] = [
+                $results[$endpoint] = [
                     'error' => $e->getMessage()
                 ];
             }
