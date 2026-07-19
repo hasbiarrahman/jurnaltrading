@@ -232,6 +232,25 @@
                 </div>
             </div>
 
+            <!-- Futures Metrics Card (Volume & OI) -->
+            <div id="analisa-futures-metrics-card" style="margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.85rem; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 0.5px; margin-top: 0;">Metrik Futures 24 Jam Terakhir</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <!-- Volume Futures -->
+                    <div style="padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; text-align: center;">
+                        <span style="font-size: 0.7rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Volume Futures</span>
+                        <div id="analisa-fut-volume" style="font-size: 1.1rem; font-weight: 800; color: white; font-family: monospace;">-</div>
+                        <div id="analisa-fut-volume-change" style="font-size: 0.75rem; font-weight: 600; margin-top: 0.15rem;">-</div>
+                    </div>
+                    <!-- Open Interest -->
+                    <div style="padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; text-align: center;">
+                        <span style="font-size: 0.7rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Open Interest (OI)</span>
+                        <div id="analisa-fut-oi" style="font-size: 1.1rem; font-weight: 800; color: white; font-family: monospace;">-</div>
+                        <div id="analisa-fut-oi-change" style="font-size: 0.75rem; font-weight: 600; margin-top: 0.15rem;">-</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Recommendation Card -->
             <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
                 <span style="font-size: 0.75rem; color: var(--text-muted); display: block; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">Saran Tindakan:</span>
@@ -601,6 +620,45 @@
                         liqShort3d.textContent = '-';
                         liqShort7d.textContent = '-';
                         warningEl.style.display = 'block';
+                    }
+
+                    // Update Futures Metrics (Volume and OI)
+                    const futVolume = document.getElementById('analisa-fut-volume');
+                    const futVolumeChange = document.getElementById('analisa-fut-volume-change');
+                    const futOi = document.getElementById('analisa-fut-oi');
+                    const futOiChange = document.getElementById('analisa-fut-oi-change');
+
+                    if (analysis.has_coinalyze_key) {
+                        futVolume.textContent = (analysis.volume_24h_formatted !== '$0.00' && analysis.volume_24h_formatted !== '-') ? analysis.volume_24h_formatted : '-';
+                        
+                        const volPct = parseFloat(analysis.volume_change_pct) || 0;
+                        futVolumeChange.textContent = analysis.volume_change_pct_formatted || '-';
+                        if (volPct > 0) {
+                            futVolumeChange.style.color = '#00e676';
+                        } else if (volPct < 0) {
+                            futVolumeChange.style.color = '#ff1744';
+                        } else {
+                            futVolumeChange.style.color = 'var(--text-muted)';
+                        }
+
+                        // Open Interest
+                        futOi.textContent = (analysis.oi_value_formatted !== '$0.00' && analysis.oi_value_formatted !== '-') ? analysis.oi_value_formatted : '-';
+                        const oiPct = parseFloat(analysis.oi_change_pct) || 0;
+                        futOiChange.textContent = analysis.oi_change_pct_formatted || '-';
+                        if (oiPct > 0) {
+                            futOiChange.style.color = '#00e676';
+                        } else if (oiPct < 0) {
+                            futOiChange.style.color = '#ff1744';
+                        } else {
+                            futOiChange.style.color = 'var(--text-muted)';
+                        }
+                    } else {
+                        futVolume.textContent = '-';
+                        futVolumeChange.textContent = '-';
+                        futVolumeChange.style.color = 'var(--text-muted)';
+                        futOi.textContent = '-';
+                        futOiChange.textContent = '-';
+                        futOiChange.style.color = 'var(--text-muted)';
                     }
                     
                     // Toggle visibility

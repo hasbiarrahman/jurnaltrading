@@ -552,6 +552,100 @@ class TechnicalAnalysisService
                 }
             }
 
+            $volume24h = null;
+            $volumeChangePct = null;
+            $oiValue = null;
+            $oiChangePct = null;
+
+            if (!empty($coinalyzeKey)) {
+                // Fetch OHLCV (Volume)
+                try {
+                    $ohlcvResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/ohlcv-history", [
+                        'symbols' => $coinalyzeSymbol,
+                        'interval' => '4hour',
+                        'from' => now()->subDays(4)->timestamp,
+                        'to' => now()->timestamp,
+                        'api_key' => $coinalyzeKey
+                    ]);
+
+                    if (!$ohlcvResponse->successful() || empty($ohlcvResponse->json())) {
+                        $ohlcvResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/ohlcv-history", [
+                            'symbols' => $symbol,
+                            'interval' => '4hour',
+                            'from' => now()->subDays(4)->timestamp,
+                            'to' => now()->timestamp,
+                            'api_key' => $coinalyzeKey
+                        ]);
+                    }
+
+                    if ($ohlcvResponse->successful()) {
+                        $ohlcvData = $ohlcvResponse->json();
+                        if (!empty($ohlcvData) && is_array($ohlcvData)) {
+                            $symbolData = $ohlcvData[0] ?? null;
+                            $history = $symbolData['history'] ?? [];
+                            if (is_array($history) && count($history) >= 12) {
+                                // Last 6 candles (Current 24h)
+                                $current24hHist = array_slice($history, -6);
+                                $currentVol = 0.0;
+                                foreach ($current24hHist as $h) {
+                                    $currentVol += (float)($h['v'] ?? 0.0) * (float)($h['c'] ?? 0.0);
+                                }
+
+                                // Preceding 6 candles (Previous 24h)
+                                $prev24hHist = array_slice($history, -12, 6);
+                                $prevVol = 0.0;
+                                foreach ($prev24hHist as $h) {
+                                    $prevVol += (float)($h['v'] ?? 0.0) * (float)($h['c'] ?? 0.0);
+                                }
+
+                                $volume24h = $currentVol;
+                                $volumeChangePct = $prevVol > 0 ? (($currentVol - $prevVol) / $prevVol) * 100 : 0.0;
+                            }
+                        }
+                    }
+                } catch (\Exception $ex) {
+                    \Log::warning("Coinalyze OHLCV API failed: " . $ex->getMessage());
+                }
+
+                // Fetch Open Interest
+                try {
+                    $oiResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/open-interest-history", [
+                        'symbols' => $coinalyzeSymbol,
+                        'interval' => '4hour',
+                        'from' => now()->subDays(4)->timestamp,
+                        'to' => now()->timestamp,
+                        'api_key' => $coinalyzeKey
+                    ]);
+
+                    if (!$oiResponse->successful() || empty($oiResponse->json())) {
+                        $oiResponse = Http::timeout(4)->get("https://api.coinalyze.net/v1/open-interest-history", [
+                            'symbols' => $symbol,
+                            'interval' => '4hour',
+                            'from' => now()->subDays(4)->timestamp,
+                            'to' => now()->timestamp,
+                            'api_key' => $coinalyzeKey
+                        ]);
+                    }
+
+                    if ($oiResponse->successful()) {
+                        $oiData = $oiResponse->json();
+                        if (!empty($oiData) && is_array($oiData)) {
+                            $symbolData = $oiData[0] ?? null;
+                            $history = $symbolData['history'] ?? [];
+                            if (is_array($history) && count($history) >= 7) {
+                                $currentOI = (float)(end($history)['c'] ?? 0.0);
+                                $prevOI = (float)($history[count($history) - 7]['c'] ?? 0.0);
+
+                                $oiValue = $currentOI;
+                                $oiChangePct = $prevOI > 0 ? (($currentOI - $prevOI) / $prevOI) * 100 : 0.0;
+                            }
+                        }
+                    }
+                } catch (\Exception $ex) {
+                    \Log::warning("Coinalyze OI API failed: " . $ex->getMessage());
+                }
+            }
+
             // Determine if price is close to Fibonacci Golden Pocket (within 1.5%)
             $nearGoldenPocket = (abs($currentPrice - $fib0618) / $fib0618) <= 0.015;
 
@@ -625,6 +719,14 @@ class TechnicalAnalysisService
                 'long_liq_3d_formatted' => $this->formatLiquidation($longLiq3d),
                 'short_liq_7d_formatted' => $this->formatLiquidation($shortLiq7d),
                 'long_liq_7d_formatted' => $this->formatLiquidation($longLiq7d),
+                'volume_24h' => $volume24h,
+                'volume_change_pct' => $volumeChangePct,
+                'oi_value' => $oiValue,
+                'oi_change_pct' => $oiChangePct,
+                'volume_24h_formatted' => $this->formatLiquidation($volume24h),
+                'volume_change_pct_formatted' => $this->formatPercentageChange($volumeChangePct),
+                'oi_value_formatted' => $this->formatLiquidation($oiValue),
+                'oi_change_pct_formatted' => $this->formatPercentageChange($oiChangePct),
                 'has_coinalyze_key' => !empty($coinalyzeKey),
             ];
 
@@ -678,5 +780,15 @@ class TechnicalAnalysisService
             return '$' . number_format($value / 1000, 2) . 'K';
         }
         return '$' . number_format($value, 2);
+    }
+
+    /**
+     * Helper to format percentage values with +/- sign.
+     */
+    private function formatPercentageChange($value)
+    {
+        if ($value === null) return '-';
+        $prefix = $value >= 0 ? '+' : '';
+        return $prefix . number_format($value, 2) . '%';
     }
 }
