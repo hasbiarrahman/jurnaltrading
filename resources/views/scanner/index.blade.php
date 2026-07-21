@@ -150,8 +150,8 @@
                     <span id="analisa-ratio" style="color: #60a5fa;">0.00</span>
                 </div>
                 <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; font-size: 0.8rem; font-family: monospace; border-top: 1px solid rgba(59,130,246,0.15); padding-top: 0.75rem;">
-                    <span style="color: #fca5a5;">Risiko: -<span id="analisa-pct-risk">0.0</span>%</span>
-                    <span style="color: #86efac;">Potensi: +<span id="analisa-pct-reward">0.0</span>%</span>
+                    <span style="color: #fca5a5;">Risiko (S1): -<span id="analisa-pct-risk">0.0</span>%</span>
+                    <span style="color: #86efac;">Potensi (R2): +<span id="analisa-pct-reward">0.0</span>%</span>
                 </div>
             </div>
 
