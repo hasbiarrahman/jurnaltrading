@@ -302,6 +302,72 @@ class PortfolioController extends Controller
         }
         $netPnlUsdt = $totalProfitUsdt - $totalLossUsdt;
 
+        // Fetch current balances and prices to calculate unrealized loss (floating loss)
+        $portfolio = $this->tokocryptoService->getPortfolio();
+        $prices = $this->tokocryptoService->getAllPrices();
+        $totalUnrealizedLossUsdt = 0.0;
+
+        foreach ($portfolio['assets'] ?? [] as $assetData) {
+            $assetName = $assetData['asset'];
+            $totalAmount = $assetData['total'];
+            $currentPrice = $assetData['price'];
+            $valueUsdt = $assetData['value_usdt'];
+
+            // Find all BUY trades in database for this asset to calculate average buy price
+            $buyTrades = Trade::where('symbol', 'like', $assetName . '%')
+                ->where('type', 'BUY')
+                ->get();
+
+            $totalBuyAmount = 0.0;
+            $totalBuyCostUsdt = 0.0;
+
+            foreach ($buyTrades as $trade) {
+                $tradeSymbol = $trade->symbol;
+                $tradePrice = (float)$trade->price;
+                $tradeAmount = (float)$trade->amount;
+
+                // Detect quote currency of trade (e.g. BIDR, USDT, IDRT)
+                $quote = 'USDT';
+                foreach (['USDT', 'BIDR', 'IDRT', 'BUSD', 'IDR'] as $q) {
+                    if (str_ends_with($tradeSymbol, $q) && strlen($tradeSymbol) > strlen($q)) {
+                        $quote = $q;
+                        break;
+                    }
+                }
+
+                // Standardize trade price to USDT
+                $priceInUsdt = $tradePrice;
+                if ($quote === 'BIDR' || $quote === 'IDRT' || $quote === 'IDR') {
+                    $rate = $prices['USDTIDR'] ?? ($prices['USDT' . $quote] ?? ($prices['USDTIDRT'] ?? 16400.0));
+                    if ($rate > 100) {
+                        $priceInUsdt = $tradePrice / $rate;
+                    } else {
+                        $priceInUsdt = $tradePrice / 16400.0;
+                    }
+                }
+
+                $totalBuyAmount += $tradeAmount;
+                $totalBuyCostUsdt += ($priceInUsdt * $tradeAmount);
+            }
+
+            // Weighted average buy price in USDT
+            $avgBuyPriceUsdt = $totalBuyAmount > 0 ? ($totalBuyCostUsdt / $totalBuyAmount) : 0.0;
+
+            // If we have no BUY trades logged, fallback average price to current price
+            if ($avgBuyPriceUsdt === 0.0) {
+                $avgBuyPriceUsdt = $currentPrice;
+            }
+
+            // Calculate cost and PNL for current holdings
+            $assetCostUsdt = $totalAmount * $avgBuyPriceUsdt;
+            $unrealizedPnlUsdt = $valueUsdt - $assetCostUsdt;
+
+            // Only add negative PNL (assets that are minus)
+            if ($unrealizedPnlUsdt < 0) {
+                $totalUnrealizedLossUsdt += abs($unrealizedPnlUsdt);
+            }
+        }
+
         return view('portfolio.pnl', [
             'pnl_records' => $allRealizedPnl,
             'asset_summaries' => $assetSummaries,
@@ -311,6 +377,8 @@ class PortfolioController extends Controller
             'total_loss_idr' => $totalLossUsdt * $usdtIdr,
             'net_pnl_usdt' => $netPnlUsdt,
             'net_pnl_idr' => $netPnlUsdt * $usdtIdr,
+            'unrealized_loss_usdt' => $totalUnrealizedLossUsdt,
+            'unrealized_loss_idr' => $totalUnrealizedLossUsdt * $usdtIdr,
             'usdt_idr_rate' => $usdtIdr,
             'start_date' => $startDate,
             'end_date' => $endDate

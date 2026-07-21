@@ -39,6 +39,15 @@
             ≈ {{ $net_pnl_usdt >= 0 ? '+' : '' }}Rp {{ number_format($net_pnl_idr, 0, ',', '.') }}
         </div>
     </div>
+    <div class="glass-card">
+        <div class="card-title" style="color: var(--text-muted);">Floating Loss (Aset Minus)</div>
+        <div class="stat-value text-danger" style="margin-top: 0.5rem; font-size: 1.8rem;">
+            -${{ number_format($unrealized_loss_usdt, 2) }}
+        </div>
+        <div class="stat-desc text-danger">
+            ≈ -Rp {{ number_format($unrealized_loss_idr, 0, ',', '.') }}
+        </div>
+    </div>
 </div>
 
 <!-- Date Filter Form -->
