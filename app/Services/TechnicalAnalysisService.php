@@ -445,6 +445,13 @@ class TechnicalAnalysisService
             // Apply sensible fallbacks if we don't have enough levels
             $s1 = count($cleanSupports) > 0 ? $cleanSupports[0] : $currentPrice * 0.95;
             
+            // Ensure a minimum risk buffer of 1.5% to avoid noise stop-out and RR anomalies
+            $minRiskPct = 1.5;
+            $minRiskValue = $currentPrice * ($minRiskPct / 100);
+            if (($currentPrice - $s1) < $minRiskValue) {
+                $s1 = $currentPrice - $minRiskValue;
+            }
+            
             $r1 = count($cleanResistances) > 0 ? $cleanResistances[0] : $currentPrice * 1.05;
             $r2 = count($cleanResistances) > 1 ? $cleanResistances[1] : $r1 * 1.05;
             $r3 = count($cleanResistances) > 2 ? $cleanResistances[2] : $r2 * 1.05;
