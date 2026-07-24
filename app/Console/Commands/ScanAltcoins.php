@@ -14,7 +14,7 @@ class ScanAltcoins extends Command
      *
      * @var string
      */
-    protected $signature = 'scan:altcoins';
+    protected $signature = 'scan:altcoins {--timeframe=1day}';
 
     /**
      * The console command description.
@@ -30,7 +30,11 @@ class ScanAltcoins extends Command
      */
     public function handle()
     {
-        $this->info('Starting altcoin scan...');
+        $timeframe = $this->option('timeframe');
+        if (!in_array($timeframe, ['1day', '4hour'])) {
+            $timeframe = '1day';
+        }
+        $this->info("Starting altcoin scan for timeframe: {$timeframe}...");
         
         $memecoins = [
             "DOGE", "SHIB", "PEPE", "BONK", "WIF", "FLOKI", "MEME", "STAY", "RAVE", 
@@ -136,9 +140,9 @@ class ScanAltcoins extends Command
             $responses = [];
             
             foreach ($scanListChunks as $chunk) {
-                $chunkResponses = Http::pool(function (Pool $pool) use ($chunk) {
+                $chunkResponses = Http::pool(function (Pool $pool) use ($chunk, $timeframe) {
                     foreach ($chunk as $pair) {
-                        $pool->as($pair['symbol'])->timeout(10)->get("https://api.kucoin.com/api/v1/market/candles?symbol={$pair['symbol']}&type=1day");
+                        $pool->as($pair['symbol'])->timeout(10)->get("https://api.kucoin.com/api/v1/market/candles?symbol={$pair['symbol']}&type={$timeframe}");
                     }
                 });
                 $responses = array_merge($responses, $chunkResponses);
@@ -169,7 +173,9 @@ class ScanAltcoins extends Command
                             $isJournal = $pair['is_journal'];
                             $hasDoubleBottomPattern = $this->detectDoubleBottom($closes);
                             $isDoubleBottom = $hasDoubleBottomPattern && ($lastK >= 32.0 && $lastK <= 55.0);
-                            $meetsFilter = ($lastRsi < 40 && $lastK < 7) || $isDoubleBottom;
+                            
+                            $stochKLimit = ($timeframe === '4hour') ? 27.0 : 7.0;
+                            $meetsFilter = ($lastRsi < 40 && $lastK <= $stochKLimit) || $isDoubleBottom;
                             
                             $coinData = [
                                 'symbol' => str_replace('-', '', $symbol),
@@ -198,7 +204,7 @@ class ScanAltcoins extends Command
                 'matches' => $matches
             ];
             
-            $resultsPath = storage_path('app/altcoin_scan_results.json');
+            $resultsPath = storage_path("app/altcoin_scan_results_{$timeframe}.json");
             File::ensureDirectoryExists(dirname($resultsPath));
             File::put($resultsPath, json_encode($outputData, JSON_PRETTY_PRINT));
             
@@ -208,7 +214,7 @@ class ScanAltcoins extends Command
                 'scanned_count' => count($scanList),
                 'items' => $allScanned
             ];
-            $allPath = storage_path('app/altcoin_scan_all.json');
+            $allPath = storage_path("app/altcoin_scan_all_{$timeframe}.json");
             File::put($allPath, json_encode($allData, JSON_PRETTY_PRINT));
             
             $this->info("Scan completed. " . count($matches) . " matches / " . count($allScanned) . " total items written.");

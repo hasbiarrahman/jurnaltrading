@@ -10,9 +10,21 @@ class ScannerController extends Controller
     /**
      * Get the last scanned results.
      */
-    public function getResults()
+    public function getResults(Request $request)
     {
-        $path = storage_path('app/altcoin_scan_results.json');
+        $timeframe = $request->query('timeframe', '1day');
+        if (!in_array($timeframe, ['1day', '4hour'])) {
+            $timeframe = '1day';
+        }
+        $path = storage_path("app/altcoin_scan_results_{$timeframe}.json");
+        
+        // Fallback to legacy file name if timeframe is 1day and the new file doesn't exist
+        if ($timeframe === '1day' && !File::exists($path)) {
+            $legacyPath = storage_path('app/altcoin_scan_results.json');
+            if (File::exists($legacyPath)) {
+                $path = $legacyPath;
+            }
+        }
         
         if (!File::exists($path)) {
             return response()->json([
@@ -35,16 +47,22 @@ class ScannerController extends Controller
     /**
      * Trigger a new scan in the background.
      */
-    public function startScan()
+    public function startScan(Request $request)
     {
+        $timeframe = $request->input('timeframe', '1day');
+        if (!in_array($timeframe, ['1day', '4hour'])) {
+            $timeframe = '1day';
+        }
         try {
             // Run the Artisan command synchronously in the PHP request process
             // This is 100% compatible with Hostinger and does not use shell exec() or node
-            \Illuminate\Support\Facades\Artisan::call('scan:altcoins');
+            \Illuminate\Support\Facades\Artisan::call('scan:altcoins', [
+                '--timeframe' => $timeframe
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Altcoin scan completed successfully.'
+                'message' => "Altcoin scan for {$timeframe} completed successfully."
             ]);
         } catch (\Exception $e) {
             \Log::error("Altcoin scan failed: " . $e->getMessage());
@@ -66,9 +84,21 @@ class ScannerController extends Controller
     /**
      * Get all scanned results.
      */
-    public function getAllResults()
+    public function getAllResults(Request $request)
     {
-        $path = storage_path('app/altcoin_scan_all.json');
+        $timeframe = $request->query('timeframe', '1day');
+        if (!in_array($timeframe, ['1day', '4hour'])) {
+            $timeframe = '1day';
+        }
+        $path = storage_path("app/altcoin_scan_all_{$timeframe}.json");
+        
+        // Fallback to legacy file name if timeframe is 1day and the new file doesn't exist
+        if ($timeframe === '1day' && !File::exists($path)) {
+            $legacyPath = storage_path('app/altcoin_scan_all.json');
+            if (File::exists($legacyPath)) {
+                $path = $legacyPath;
+            }
+        }
         
         if (!File::exists($path)) {
             return response()->json([

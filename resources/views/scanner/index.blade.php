@@ -24,6 +24,13 @@
     </div>
     <div class="header-actions" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
         <span id="scan-last-updated" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">Terakhir diupdate: -</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="timeframe-select" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Timeframe:</label>
+            <select id="timeframe-select" style="padding: 0.5rem 1.75rem 0.5rem 0.75rem; font-size: 0.85rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.25); color: white; outline: none; cursor: pointer; font-weight: 600; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=&quot;white&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; width=&quot;24&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><path d=&quot;M7 10l5 5 5-5z&quot;/></svg>'); background-repeat: no-repeat; background-position: right 6px center; background-size: 18px;">
+                <option value="1day" style="background: #0f1026;">1 Hari (1D)</option>
+                <option value="4hour" style="background: #0f1026;">4 Jam (4H)</option>
+            </select>
+        </div>
         <button id="btn-trigger-scan" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border-radius: 6px; background-color: var(--color-primary); color: white; border: none; font-weight: 600;">
             <svg id="scan-spinner" class="animate-spin" style="display: none; width: 14px; height: 14px; color: white;" fill="none" viewBox="0 0 24 24">
                 <circle style="opacity: 0.25; stroke: currentColor; stroke-width: 4;" cx="12" cy="12" r="10"></circle>
@@ -44,7 +51,7 @@
     <div class="glass-card">
         <div class="card-title" style="font-size: 0.9rem; color: var(--text-muted);">Jenuh Jual (Oversold)</div>
         <div class="stat-value" id="stat-total-oversold" style="color: #00e676; font-size: 2rem; font-weight: 700; margin-top: 0.5rem;">0</div>
-        <div class="stat-desc">Stoch RSI < 7 & RSI < 40</div>
+        <div class="stat-desc" id="stat-oversold-desc">Stoch RSI < 7 & RSI < 40</div>
     </div>
     <div class="glass-card">
         <div class="card-title" style="font-size: 0.9rem; color: var(--text-muted);">Aset Jurnal</div>
@@ -88,7 +95,7 @@
                     <th style="cursor: pointer; user-select: none;" onclick="changeSort('symbol')">Simbol <span id="sort-icon-symbol" style="margin-left: 3px; font-size: 0.75rem;">↕</span></th>
                     <th style="cursor: pointer; user-select: none;" onclick="changeSort('price')">Harga Aktual <span id="sort-icon-price" style="margin-left: 3px; font-size: 0.75rem;">↕</span></th>
                     <th style="cursor: pointer; user-select: none;" onclick="changeSort('stochK')">Stoch RSI %K <span id="sort-icon-stochK" style="margin-left: 3px; font-size: 0.75rem;">↕</span></th>
-                    <th style="cursor: pointer; user-select: none;" onclick="changeSort('rsi')">RSI (1D) <span id="sort-icon-rsi" style="margin-left: 3px; font-size: 0.75rem;">↕</span></th>
+                    <th style="cursor: pointer; user-select: none;" onclick="changeSort('rsi')"><span id="rsi-header-text">RSI (1D)</span> <span id="sort-icon-rsi" style="margin-left: 3px; font-size: 0.75rem;">↕</span></th>
                     <th style="cursor: pointer; user-select: none;" onclick="changeSort('volume_24h')">Volume 24h <span id="sort-icon-volume_24h" style="margin-left: 3px; font-size: 0.75rem;">↕</span></th>
                     <th style="text-align: center;">Status</th>
                     <th style="text-align: center;">Aksi</th>
@@ -284,6 +291,38 @@
     let lastUpdatedTimestamp = null;
     let pollingInterval = null;
 
+    const timeframeSelect = document.getElementById("timeframe-select");
+    let selectedTimeframe = timeframeSelect ? timeframeSelect.value : '1day';
+
+    if (timeframeSelect) {
+        timeframeSelect.addEventListener("change", function() {
+            selectedTimeframe = this.value;
+            clearInterval(pollingInterval);
+            setScanningState(false);
+            
+            scannerItems = [];
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                        Memuat data hasil scan timeframe baru...
+                    </td>
+                </tr>
+            `;
+            
+            const oversoldDesc = document.getElementById("stat-oversold-desc");
+            const rsiHeader = document.getElementById("rsi-header-text");
+            if (selectedTimeframe === '4hour') {
+                if (oversoldDesc) oversoldDesc.textContent = "Stoch RSI <= 27 & RSI < 40";
+                if (rsiHeader) rsiHeader.textContent = "RSI (4H)";
+            } else {
+                if (oversoldDesc) oversoldDesc.textContent = "Stoch RSI < 7 & RSI < 40";
+                if (rsiHeader) rsiHeader.textContent = "RSI (1D)";
+            }
+            
+            loadScannerAllResults();
+        });
+    }
+
     const tableBody = document.getElementById("scanner-all-table-body");
     const searchInput = document.getElementById("search-input");
     const statTotalScanned = document.getElementById("stat-total-scanned");
@@ -296,7 +335,7 @@
     const scanBtnText = document.getElementById("scan-btn-text");
 
     function loadScannerAllResults() {
-        fetch('/api/scanner/all?_t=' + new Date().getTime())
+        fetch('/api/scanner/all?timeframe=' + selectedTimeframe + '&_t=' + new Date().getTime())
             .then(res => res.json())
             .then(data => {
                 if (data.last_updated) {
@@ -342,7 +381,8 @@
 
     function calculateStats() {
         const total = scannerItems.length;
-        const oversold = scannerItems.filter(item => item.rsi < 40 && item.stochK < 7).length;
+        const stochKLimit = (selectedTimeframe === '4hour') ? 27.0 : 7.0;
+        const oversold = scannerItems.filter(item => item.rsi < 40 && item.stochK <= stochKLimit).length;
         const doubleBottom = scannerItems.filter(item => item.is_double_bottom).length;
         const journal = scannerItems.filter(item => item.is_journal).length;
         
@@ -364,7 +404,8 @@
             
             let matchesTab = true;
             if (currentFilter === 'oversold') {
-                matchesTab = (item.rsi < 40 && item.stochK < 7);
+                const stochKLimit = (selectedTimeframe === '4hour') ? 27.0 : 7.0;
+                matchesTab = (item.rsi < 40 && item.stochK <= stochKLimit);
             } else if (currentFilter === 'double_bottom') {
                 matchesTab = item.is_double_bottom;
             } else if (currentFilter === 'journal') {
@@ -519,7 +560,8 @@
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
-            }
+            },
+            body: JSON.stringify({ timeframe: selectedTimeframe })
         })
         .then(res => res.json())
         .then(data => {
